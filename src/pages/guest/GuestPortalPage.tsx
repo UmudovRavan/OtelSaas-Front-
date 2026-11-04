@@ -418,109 +418,117 @@ export const GuestPortalPage: React.FC = () => {
             </button>
           </motion.div>
 
-          {/* Tab Content 1: Categories & Menu */}
-          {activeTab === 'services' && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              {displayCategories.map((category) => (
-                <motion.div variants={itemVariants} key={category.id}>
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1 mb-2.5">
-                    {category.title}
-                  </h2>
+          {/* Tab Content: Categories & Menu vs Activities */}
+          <AnimatePresence mode="wait">
+            {activeTab === 'services' ? (
+              <motion.div
+                key="tab-services"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-6"
+              >
+                {displayCategories.map((category, catIdx) => (
+                  <motion.div
+                    key={category.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, delay: catIdx * 0.04 }}
+                  >
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1 mb-2.5">
+                      {category.title}
+                    </h2>
 
-                  <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] divide-y divide-[var(--border-color)] overflow-hidden shadow-sm">
-                    {category.items.map((item) => (
-                      <motion.div
-                        key={item.id}
-                        whileHover={{ x: 4, backgroundColor: 'rgba(167, 139, 250, 0.06)' }}
-                        whileTap={{ scale: 0.98, backgroundColor: 'rgba(167, 139, 250, 0.12)' }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                        onClick={() => handleLinkClick(item)}
-                        className="p-3.5 flex items-center justify-between cursor-pointer transition-colors group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center flex-shrink-0 border border-[var(--border-color)] group-hover:scale-105 group-hover:border-[#A78BFA]/50 transition-all">
-                            <IOSIcon name={item.iconName} size={19} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-[var(--text-main)] tracking-tight truncate group-hover:text-[#A78BFA] transition-colors">
-                                {item.title}
-                              </span>
-                              {item.badge && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#A78BFA]/20 text-[#8B5CF6] dark:text-[#A78BFA]">
-                                  {item.badge}
+                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] divide-y divide-[var(--border-color)] overflow-hidden shadow-sm">
+                      {category.items.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          whileHover={{ x: 4, backgroundColor: 'rgba(167, 139, 250, 0.06)' }}
+                          whileTap={{ scale: 0.98, backgroundColor: 'rgba(167, 139, 250, 0.12)' }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                          onClick={() => handleLinkClick(item)}
+                          className="p-3.5 flex items-center justify-between cursor-pointer transition-colors group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center flex-shrink-0 border border-[var(--border-color)] group-hover:scale-105 group-hover:border-[#A78BFA]/50 transition-all">
+                              <IOSIcon name={item.iconName} size={19} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-[var(--text-main)] tracking-tight truncate group-hover:text-[#A78BFA] transition-colors">
+                                  {item.title}
                                 </span>
+                                {item.badge && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#A78BFA]/20 text-[#8B5CF6] dark:text-[#A78BFA]">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </div>
+                              {item.subtitle && (
+                                <p className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">
+                                  {item.subtitle}
+                                </p>
                               )}
                             </div>
-                            {item.subtitle && (
-                              <p className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">
-                                {item.subtitle}
-                              </p>
-                            )}
                           </div>
-                        </div>
 
-                        <div className="text-[var(--text-muted)]/50 flex-shrink-0 ml-2 group-hover:text-[#A78BFA] group-hover:translate-x-1 transition-all">
-                          <IOSIcon name="ChevronRight" size={15} />
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-
-          {/* Tab Content 2: Activities */}
-          {activeTab === 'activities' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-3"
-            >
-              <div className="flex items-center justify-between px-1 mb-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  {t.todaySchedule}
-                </h2>
-                <span className="text-[11px] text-[#A78BFA] font-bold">{t.allResort}</span>
-              </div>
-
-              {displayActivities.map((act) => (
-                <motion.div 
-                  key={act.id} 
-                  whileHover={{ scale: 1.015, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: 'spring', stiffness: 450, damping: 20 }}
-                  className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-start justify-between shadow-sm hover:border-[#A78BFA]/40 transition-colors"
-                >
-                  <div className="space-y-1">
-                    <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#A78BFA]/20 text-[#8B5CF6] dark:text-[#A78BFA]">
-                      {act.category}
-                    </span>
-                    <h3 className="text-sm font-bold text-[var(--text-main)]">{act.title}</h3>
-                    <div className="flex items-center gap-3 text-[11px] text-[var(--text-muted)] pt-1">
-                      <span className="flex items-center gap-1">
-                        <span className="text-[#A78BFA]"><IOSIcon name="Clock" size={13} /></span>
-                        {act.time}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="text-[#A78BFA]"><IOSIcon name="MapPin" size={13} /></span>
-                        {act.location}
-                      </span>
+                          <div className="text-[var(--text-muted)]/50 flex-shrink-0 ml-2 group-hover:text-[#A78BFA] group-hover:translate-x-1 transition-all">
+                            <IOSIcon name="ChevronRight" size={15} />
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="tab-activities"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-3"
+              >
+                <div className="flex items-center justify-between px-1 mb-2">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    {t.todaySchedule}
+                  </h2>
+                  <span className="text-[11px] text-[#A78BFA] font-bold">{t.allResort}</span>
+                </div>
+
+                {displayActivities.map((act, actIdx) => (
+                  <motion.div
+                    key={act.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, delay: actIdx * 0.04 }}
+                    whileHover={{ scale: 1.015, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-start justify-between shadow-sm hover:border-[#A78BFA]/40 transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#A78BFA]/20 text-[#8B5CF6] dark:text-[#A78BFA]">
+                        {act.category}
+                      </span>
+                      <h3 className="text-sm font-bold text-[var(--text-main)]">{act.title}</h3>
+                      <div className="flex items-center gap-3 text-[11px] text-[var(--text-muted)] pt-1">
+                        <span className="flex items-center gap-1">
+                          <span className="text-[#A78BFA]"><IOSIcon name="Clock" size={13} /></span>
+                          {act.time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="text-[#A78BFA]"><IOSIcon name="MapPin" size={13} /></span>
+                          {act.location}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Wi-Fi Quick Card & Save Contact (.vcf vCard) with Tactile Press Feedback */}
           <motion.div variants={itemVariants} className="mt-6 space-y-2.5">
