@@ -10,6 +10,7 @@ export interface AuthUser {
   fullName?: string;
   tenantId?: string;
   tenantSlug?: string;
+  tenantName?: string;
   token: string;
 }
 
@@ -17,7 +18,16 @@ interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   login: (email: string, password: string) => Promise<UserRole>;
-  loginWithToken: (jwtToken: string, fullName?: string) => void;
+  loginWithToken: (
+    jwtToken: string,
+    meta?: {
+      fullName?: string;
+      tenantId?: string | null;
+      tenantSlug?: string | null;
+      tenantName?: string | null;
+      role?: UserRole;
+    }
+  ) => void;
   loginWithCredentials: (email: string, role: UserRole, tenantSlug?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
@@ -34,6 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(() => {
     const savedToken = localStorage.getItem('otelsaas_token');
     if (!savedToken) return null;
+    try {
+      const savedUserRaw = localStorage.getItem('otelsaas_user');
+      if (savedUserRaw) {
+        const savedUser = JSON.parse(savedUserRaw) as AuthUser;
+        if (savedUser && savedUser.email) {
+          return { ...savedUser, token: savedToken };
+        }
+      }
+    } catch (e) {
+      // ignore parse error
+    }
     const decoded = parseJwt(savedToken);
     if (!decoded) return null;
     return {
@@ -45,28 +66,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   });
 
-  const loginWithToken = (jwtToken: string, fullName?: string) => {
+  const loginWithToken = (
+    jwtToken: string,
+    meta?: {
+      fullName?: string;
+      tenantId?: string | null;
+      tenantSlug?: string | null;
+      tenantName?: string | null;
+      role?: UserRole;
+    }
+  ) => {
     const decoded = parseJwt(jwtToken);
     if (decoded) {
       const newUser: AuthUser = {
         email: decoded.email,
-        role: decoded.role,
-        fullName: fullName || decoded.email,
-        tenantId: decoded.tenantId,
-        tenantSlug: decoded.tenantSlug,
+        role: meta?.role || decoded.role,
+        fullName: meta?.fullName || decoded.email,
+        tenantId: meta?.tenantId || decoded.tenantId,
+        tenantSlug: meta?.tenantSlug || decoded.tenantSlug,
+        tenantName: meta?.tenantName || undefined,
         token: jwtToken,
       };
       setToken(jwtToken);
       setUser(newUser);
       localStorage.setItem('otelsaas_token', jwtToken);
+      localStorage.setItem('otelsaas_user', JSON.stringify(newUser));
     }
   };
 
   const login = async (email: string, password: string): Promise<UserRole> => {
     try {
       const data = await authService.login({ email, password });
-      loginWithToken(data.accessToken, data.fullName);
-      const role = (data.roles && data.roles[0]) as UserRole || 'Receptionist';
+      const role = ((data.roles && data.roles[0]) as UserRole) || 'Receptionist';
+      loginWithToken(data.accessToken, {
+        fullName: data.fullName,
+        tenantId: data.tenantId,
+        tenantSlug: data.tenantSlug,
+        tenantName: data.tenantName,
+        role,
+      });
       return role;
     } catch (err: any) {
       console.warn('Real API login error, checking fallback demo:', err);
@@ -77,13 +115,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithCredentials = (email: string, role: UserRole, tenantSlug = 'hotel-resort') => {
     // Fallback generator for offline/demo tests
     const jwtToken = createMockJwt(email, role, tenantSlug);
-    loginWithToken(jwtToken);
+    loginWithToken(jwtToken, { role, tenantSlug });
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('otelsaas_token');
+    localStorage.removeItem('otelsaas_user');
     localStorage.removeItem('token');
   };
 

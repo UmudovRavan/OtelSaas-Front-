@@ -18,16 +18,16 @@ export interface CreateTenantDto {
   name: string;
   slug: string;
   adminEmail: string;
-  adminPassword?: string;
-  adminFullName?: string;
-  phone?: string;
-  subscriptionEndDate?: string;
+  adminPassword: string;
+  adminFullName: string;
+  phone?: string | null;
+  subscriptionEndDate?: string | null;
 }
 
 export interface UpdateSubscriptionDto {
-  isActive?: boolean;
-  subscriptionStatus?: number;
-  subscriptionEndDate?: string;
+  isActive: boolean;
+  subscriptionStatus: number;
+  subscriptionEndDate?: string | null;
   suspensionReason?: string | null;
 }
 
@@ -45,8 +45,16 @@ export const superAdminService = {
     return response.data.data || [];
   },
 
+  async getTenantById(id: string): Promise<TenantItem> {
+    const response = await apiClient.get<ApiResponse<TenantItem>>(`/api/super-admin/tenants/${id}`);
+    return response.data.data;
+  },
+
   async createTenant(data: CreateTenantDto): Promise<TenantItem> {
     const response = await apiClient.post<ApiResponse<TenantItem>>('/api/super-admin/tenants', data);
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Otel yaradılarkən xəta baş verdi.');
+    }
     return response.data.data;
   },
 
@@ -65,4 +73,3 @@ export const superAdminService = {
     return response.data.data;
   },
 };
-

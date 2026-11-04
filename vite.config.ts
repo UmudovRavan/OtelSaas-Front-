@@ -12,6 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/q': {
+        target: 'http://31.57.77.199:5055',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

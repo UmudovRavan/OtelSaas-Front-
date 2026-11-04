@@ -1,165 +1,332 @@
 import { apiClient, ApiResponse, API_BASE_URL } from './client';
 
 export interface HotelAdminProfile {
+  id: string;
   name: string;
   slug: string;
-  bio: string;
+  bioAz?: string | null;
+  bioEn?: string | null;
+  bioRu?: string | null;
+  defaultLanguage: string;
   logoUrl?: string | null;
   coverImageUrl?: string | null;
   primaryColor: string;
   themeMode: number;
-  phone: string;
-  email: string;
-  whatsApp: string;
-  telegram: string;
-  address: string;
-  mapUrl: string;
+  phone?: string | null;
+  email?: string | null;
+  whatsApp?: string | null;
+  telegram?: string | null;
+  address?: string | null;
+  mapUrl?: string | null;
+  isActive: boolean;
+  subscriptionStatus: number;
+  subscriptionEndDate?: string | null;
 }
 
-export interface AdminCategory {
-  id: string;
-  title: string;
-  layoutType: 'list' | 'icons';
-  displayOrder: number;
-  linksCount?: number;
+export interface UpdateHotelProfileDto {
+  name: string;
+  bioAz?: string | null;
+  bioEn?: string | null;
+  bioRu?: string | null;
+  defaultLanguage: string;
+  primaryColor: string;
+  themeMode: number;
+  phone?: string | null;
+  email?: string | null;
+  whatsApp?: string | null;
+  telegram?: string | null;
+  address?: string | null;
+  mapUrl?: string | null;
 }
 
 export interface AdminLink {
   id: string;
   categoryId: string;
-  title: string;
-  subtitle?: string;
+  titleAz: string;
+  titleEn?: string | null;
+  titleRu?: string | null;
   linkType: number;
   targetUrl: string;
-  iconKey: string;
-  badge?: string;
-  isActive: boolean;
+  filePath?: string | null;
+  iconKey?: string | null;
+  isCustomIcon: boolean;
+  openInNewTab: boolean;
   displayOrder: number;
+  isActive: boolean;
+  clickCount: number;
+}
+
+export interface CreateLinkDto {
+  categoryId: string;
+  titleAz: string;
+  titleEn?: string | null;
+  titleRu?: string | null;
+  linkType: number;
+  targetUrl: string;
+  iconKey?: string | null;
+  isCustomIcon: boolean;
+  openInNewTab: boolean;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+export interface AdminCategory {
+  id: string;
+  titleAz: string;
+  titleEn?: string | null;
+  titleRu?: string | null;
+  layoutType: 'list' | 'icons';
+  displayOrder: number;
+  isActive: boolean;
+  links?: AdminLink[];
+}
+
+export interface CreateCategoryDto {
+  titleAz: string;
+  titleEn?: string | null;
+  titleRu?: string | null;
+  layoutType: 'list' | 'icons';
+  displayOrder: number;
+  isActive: boolean;
 }
 
 export interface AdminActivity {
   id: string;
-  title: string;
-  description?: string;
-  location: string;
+  titleAz: string;
+  titleEn?: string | null;
+  titleRu?: string | null;
+  description?: string | null;
+  location?: string | null;
   startTime: string;
-  endTime: string;
-  date: string;
-  category: string;
-  isActive?: boolean;
+  endTime?: string | null;
+  date?: string | null;
+  category?: string | null;
+  imageUrl?: string | null;
+  isActive: boolean;
+  displayOrder: number;
+  createdAtUtc?: string;
+}
+
+export interface CreateActivityDto {
+  titleAz: string;
+  titleEn?: string | null;
+  titleRu?: string | null;
+  description?: string | null;
+  location?: string | null;
+  startTime: string;
+  endTime?: string | null;
+  date?: string | null;
+  category?: string | null;
+  imageUrl?: string | null;
+  displayOrder: number;
 }
 
 export interface AnalyticsSummary {
-  totalViews: number;
-  totalLinkClicks: number;
-  totalInquiries: number;
-  deviceBreakdown?: {
-    mobilePercentage: number;
-    desktopPercentage: number;
-  };
+  totalViewsLast30Days?: number;
+  totalClicksLast30Days?: number;
+  totalInquiriesLast30Days?: number;
+  totalViews?: number;
+  totalLinkClicks?: number;
+  totalInquiries?: number;
+  topLinks?: { linkId: string; title: string; clicks: number }[];
+  dailyViews?: { date: string; views: number; clicks: number }[];
+}
+
+function getTenantQueryParam(overrideTenantId?: string | null): Record<string, string> | undefined {
+  const tid = overrideTenantId || new URLSearchParams(window.location.search).get('tenantId');
+  return tid ? { tenantId: tid } : undefined;
+}
+
+export function resolveBackendMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 export const hotelAdminService = {
-  async getProfile(): Promise<HotelAdminProfile> {
-    const response = await apiClient.get<ApiResponse<HotelAdminProfile>>('/api/hotel-admin/profile');
+  async getProfile(tenantId?: string | null): Promise<HotelAdminProfile> {
+    const response = await apiClient.get<ApiResponse<HotelAdminProfile>>('/api/hotel-admin/profile', {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data;
   },
 
-  async updateProfile(profile: Partial<HotelAdminProfile>): Promise<HotelAdminProfile> {
-    const response = await apiClient.put<ApiResponse<HotelAdminProfile>>('/api/hotel-admin/profile', profile);
+  async updateProfile(profile: UpdateHotelProfileDto, tenantId?: string | null): Promise<HotelAdminProfile> {
+    const response = await apiClient.put<ApiResponse<HotelAdminProfile>>('/api/hotel-admin/profile', profile, {
+      params: getTenantQueryParam(tenantId),
+    });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Profil yenilənərkən xəta baş verdi.');
+    }
     return response.data.data;
   },
 
-  async uploadLogo(file: File): Promise<string> {
+  async uploadLogo(file: File, tenantId?: string | null): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
     const response = await apiClient.post<ApiResponse<string>>('/api/hotel-admin/profile/logo', formData, {
+      params: getTenantQueryParam(tenantId),
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Loqo yüklənərkən xəta baş verdi.');
+    }
     return response.data.data;
   },
 
-  async uploadCover(file: File): Promise<string> {
+  async uploadCover(file: File, tenantId?: string | null): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
     const response = await apiClient.post<ApiResponse<string>>('/api/hotel-admin/profile/cover', formData, {
+      params: getTenantQueryParam(tenantId),
       headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Qapaq şəkli yüklənərkən xəta baş verdi.');
+    }
+    return response.data.data;
+  },
+
+  async getCategories(tenantId?: string | null): Promise<AdminCategory[]> {
+    const response = await apiClient.get<ApiResponse<AdminCategory[]>>('/api/hotel-admin/categories', {
+      params: getTenantQueryParam(tenantId),
+    });
+    return response.data.data || [];
+  },
+
+  async createCategory(category: CreateCategoryDto, tenantId?: string | null): Promise<AdminCategory> {
+    const response = await apiClient.post<ApiResponse<AdminCategory>>('/api/hotel-admin/categories', category, {
+      params: getTenantQueryParam(tenantId),
     });
     return response.data.data;
   },
 
-  async getCategories(): Promise<AdminCategory[]> {
-    const response = await apiClient.get<ApiResponse<AdminCategory[]>>('/api/hotel-admin/categories');
-    return response.data.data || [];
-  },
-
-  async createCategory(category: { title: string; layoutType: 'list' | 'icons'; displayOrder?: number }): Promise<AdminCategory> {
-    const response = await apiClient.post<ApiResponse<AdminCategory>>('/api/hotel-admin/categories', category);
+  async updateCategory(id: string, category: CreateCategoryDto, tenantId?: string | null): Promise<AdminCategory> {
+    const response = await apiClient.put<ApiResponse<AdminCategory>>(`/api/hotel-admin/categories/${id}`, category, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data;
   },
 
-  async updateCategory(id: string, category: { title: string; layoutType: 'list' | 'icons'; displayOrder?: number }): Promise<AdminCategory> {
-    const response = await apiClient.put<ApiResponse<AdminCategory>>(`/api/hotel-admin/categories/${id}`, category);
-    return response.data.data;
-  },
-
-  async deleteCategory(id: string): Promise<boolean> {
-    const response = await apiClient.delete<ApiResponse<boolean>>(`/api/hotel-admin/categories/${id}`);
+  async deleteCategory(id: string, tenantId?: string | null): Promise<boolean> {
+    const response = await apiClient.delete<ApiResponse<boolean>>(`/api/hotel-admin/categories/${id}`, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.success;
   },
 
-  async getLinks(): Promise<AdminLink[]> {
-    const response = await apiClient.get<ApiResponse<AdminLink[]>>('/api/hotel-admin/links');
-    return response.data.data || [];
-  },
-
-  async createLink(link: Partial<AdminLink>): Promise<AdminLink> {
-    const response = await apiClient.post<ApiResponse<AdminLink>>('/api/hotel-admin/links', link);
+  async createLink(link: CreateLinkDto, tenantId?: string | null): Promise<AdminLink> {
+    const response = await apiClient.post<ApiResponse<AdminLink>>('/api/hotel-admin/links', link, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data;
   },
 
-  async updateLink(id: string, link: Partial<AdminLink>): Promise<AdminLink> {
-    const response = await apiClient.put<ApiResponse<AdminLink>>(`/api/hotel-admin/links/${id}`, link);
+  async updateLink(id: string, link: Omit<CreateLinkDto, 'categoryId'>, tenantId?: string | null): Promise<AdminLink> {
+    const response = await apiClient.put<ApiResponse<AdminLink>>(`/api/hotel-admin/links/${id}`, link, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data;
   },
 
-  async deleteLink(id: string): Promise<boolean> {
-    const response = await apiClient.delete<ApiResponse<boolean>>(`/api/hotel-admin/links/${id}`);
+  async deleteLink(id: string, tenantId?: string | null): Promise<boolean> {
+    const response = await apiClient.delete<ApiResponse<boolean>>(`/api/hotel-admin/links/${id}`, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.success;
   },
 
-  async uploadLinkFile(id: string, file: File): Promise<string> {
+  async uploadLinkFile(id: string, file: File, tenantId?: string | null): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
     const response = await apiClient.post<ApiResponse<string>>(`/api/hotel-admin/links/${id}/upload-file`, formData, {
+      params: getTenantQueryParam(tenantId),
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data.data;
   },
 
-  async getActivities(): Promise<AdminActivity[]> {
-    const response = await apiClient.get<ApiResponse<AdminActivity[]>>('/api/hotel-admin/activities');
+  async getActivities(tenantId?: string | null): Promise<AdminActivity[]> {
+    const response = await apiClient.get<ApiResponse<AdminActivity[]>>('/api/hotel-admin/activities', {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data || [];
   },
 
-  async createActivity(activity: Partial<AdminActivity>): Promise<AdminActivity> {
-    const response = await apiClient.post<ApiResponse<AdminActivity>>('/api/hotel-admin/activities', activity);
+  async createActivity(activity: CreateActivityDto, tenantId?: string | null): Promise<AdminActivity> {
+    const response = await apiClient.post<ApiResponse<AdminActivity>>('/api/hotel-admin/activities', activity, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data;
   },
 
-  async deleteActivity(id: string): Promise<boolean> {
-    const response = await apiClient.delete<ApiResponse<boolean>>(`/api/hotel-admin/activities/${id}`);
-    return response.data.success;
-  },
-
-  async toggleActivity(id: string): Promise<boolean> {
-    const response = await apiClient.patch<ApiResponse<boolean>>(`/api/hotel-admin/activities/${id}/toggle`);
-    return response.data.success;
-  },
-
-  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
-    const response = await apiClient.get<ApiResponse<AnalyticsSummary>>('/api/hotel-admin/analytics/summary');
+  async updateActivity(
+    id: string,
+    activity: CreateActivityDto & { isActive: boolean },
+    tenantId?: string | null
+  ): Promise<AdminActivity> {
+    const response = await apiClient.put<ApiResponse<AdminActivity>>(`/api/hotel-admin/activities/${id}`, activity, {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data;
+  },
+
+  async deleteActivity(id: string, tenantId?: string | null): Promise<boolean> {
+    const response = await apiClient.delete<ApiResponse<boolean>>(`/api/hotel-admin/activities/${id}`, {
+      params: getTenantQueryParam(tenantId),
+    });
+    return response.data.success;
+  },
+
+  async toggleActivity(id: string, tenantId?: string | null): Promise<boolean> {
+    const response = await apiClient.patch<ApiResponse<boolean>>(
+      `/api/hotel-admin/activities/${id}/toggle`,
+      {},
+      { params: getTenantQueryParam(tenantId) }
+    );
+    return response.data.success;
+  },
+
+  async getAnalyticsSummary(tenantId?: string | null): Promise<AnalyticsSummary> {
+    const response = await apiClient.get<ApiResponse<AnalyticsSummary>>('/api/hotel-admin/analytics/summary', {
+      params: getTenantQueryParam(tenantId),
+    });
+    return response.data.data;
+  },
+
+  async connectTelegram(
+    data: { botToken: string; chatId: string; isEnabled: boolean },
+    tenantId?: string | null
+  ): Promise<boolean> {
+    const response = await apiClient.post<ApiResponse<boolean>>(
+      '/api/hotel-admin/notifications/telegram/connect',
+      data,
+      { params: getTenantQueryParam(tenantId) }
+    );
+    return response.data.success;
+  },
+
+  async connectEmail(
+    data: { targetEmail: string; isEnabled: boolean },
+    tenantId?: string | null
+  ): Promise<boolean> {
+    const response = await apiClient.post<ApiResponse<boolean>>(
+      '/api/hotel-admin/notifications/email/connect',
+      data,
+      { params: getTenantQueryParam(tenantId) }
+    );
+    return response.data.success;
+  },
+
+  async sendTestNotification(tenantId?: string | null): Promise<boolean> {
+    const response = await apiClient.post<ApiResponse<boolean>>(
+      '/api/hotel-admin/notifications/test',
+      {},
+      { params: getTenantQueryParam(tenantId) }
+    );
+    return response.data.success;
   },
 
   getQrPngUrl(slug = 'hotel-resort'): string {
@@ -170,4 +337,3 @@ export const hotelAdminService = {
     return `${API_BASE_URL}/api/public/${slug}/qr/svg`;
   },
 };
-

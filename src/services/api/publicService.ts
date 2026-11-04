@@ -58,8 +58,10 @@ export interface SubmitInquiryDto {
 }
 
 export const publicService = {
-  async getHotelBySlug(slug: string): Promise<PublicHotelProfile> {
-    const response = await apiClient.get<ApiResponse<PublicHotelProfile>>(`/api/public/${slug}`);
+  async getHotelBySlug(slug: string, lang: 'az' | 'en' | 'ru' = 'az'): Promise<PublicHotelProfile> {
+    const response = await apiClient.get<ApiResponse<PublicHotelProfile>>(`/api/public/${slug}`, {
+      params: { lang },
+    });
     if (!response.data.success || !response.data.data) {
       throw new Error(response.data.message || 'Otel məlumatları tapılmadı.');
     }

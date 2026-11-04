@@ -7,6 +7,8 @@ import { InquirySheet } from './components/InquirySheet';
 import { WifiModal } from './components/WifiModal';
 import { translations, Language, ServiceItemTranslation } from '../../utils/translations';
 import { publicService, PublicHotelProfile } from '../../services/api/publicService';
+import { resolveBackendMediaUrl } from '../../services/api/hotelAdminService';
+import { fetchHotelQrSvg } from '../../utils/qrIntegration';
 
 // Animation variants for staggered cascading entry
 const containerVariants: Variants = {
@@ -41,6 +43,8 @@ export const GuestPortalPage: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [isWifiOpen, setIsWifiOpen] = useState(false);
+  const [isQrShareOpen, setIsQrShareOpen] = useState(false);
+  const [guestQrSvg, setGuestQrSvg] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'services' | 'activities'>('services');
   const [selectedService, setSelectedService] = useState<ServiceItemTranslation | null>(null);
 
@@ -54,7 +58,7 @@ export const GuestPortalPage: React.FC = () => {
 
   useEffect(() => {
     publicService
-      .getHotelBySlug(hotelSlug)
+      .getHotelBySlug(hotelSlug, selectedLang)
       .then((data) => {
         setLiveHotel(data);
         setIsSuspended(false);
@@ -67,7 +71,46 @@ export const GuestPortalPage: React.FC = () => {
           console.warn('Real API public hotel fetch error, using local fallback:', err);
         }
       });
-  }, [hotelSlug]);
+  }, [hotelSlug, selectedLang]);
+
+  const displayHotelName = liveHotel?.name || t.hotelName;
+  const displayHotelBio = liveHotel?.bio || t.hotelDescription;
+  const displayCoverImage = liveHotel?.coverImageUrl
+    ? resolveBackendMediaUrl(liveHotel.coverImageUrl)
+    : hotel.coverImage;
+  const displayLogo = liveHotel?.logoUrl
+    ? resolveBackendMediaUrl(liveHotel.logoUrl)
+    : hotel.logo;
+  const displayPhone = liveHotel?.phone || hotel.phone;
+  const displayWhatsapp = (liveHotel?.whatsApp || hotel.whatsapp).replace(/[^0-9]/g, '');
+
+  const displayCategories =
+    liveHotel?.categories && liveHotel.categories.length > 0 && liveHotel.categories.some((c) => c.links && c.links.length > 0)
+      ? liveHotel.categories
+          .filter((c) => c.links && c.links.length > 0)
+          .map((c) => ({
+            id: c.id,
+            title: c.title,
+            items: c.links.map((l) => ({
+              id: l.id,
+              title: l.title,
+              subtitle: '',
+              iconName: l.iconKey || 'Sparkles',
+              actionUrl: l.actionUrl ? resolveBackendMediaUrl(l.actionUrl) : '#',
+            })),
+          }))
+      : t.categories;
+
+  const displayActivities =
+    liveHotel?.activities && liveHotel.activities.length > 0
+      ? liveHotel.activities.map((a) => ({
+          id: a.id,
+          title: a.title,
+          time: a.endTime ? `${a.startTime} - ${a.endTime}` : a.startTime,
+          location: a.location || displayHotelName,
+          category: a.category || 'Tədbir',
+        }))
+      : t.activities;
 
   // Theme Sync with HTML document class
   useEffect(() => {
@@ -79,6 +122,10 @@ export const GuestPortalPage: React.FC = () => {
   }, [isDarkMode]);
 
   const handleLinkClick = (item: ServiceItemTranslation) => {
+    if (item.actionUrl?.startsWith('http')) {
+      window.open(item.actionUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
     if (item.actionUrl?.startsWith('#')) {
       if (item.id === 'd2' || item.id === 's1') {
         setIsInquiryOpen(true);
@@ -203,25 +250,32 @@ export const GuestPortalPage: React.FC = () => {
             initial={{ scale: 1.06 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.9, ease: 'easeOut' }}
-            src={hotel.coverImage} 
-            alt={t.hotelName}
+            src={displayCoverImage} 
+            alt={displayHotelName}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/40 to-transparent" />
           
-          {/* Share Button with Spring Tap */}
+          {/* Share / Show QR Button with Spring Tap */}
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.88 }}
             transition={{ type: 'spring', stiffness: 450, damping: 17 }}
             onClick={() => {
-              if (navigator.share) {
-                navigator.share({ title: t.hotelName, url: window.location.href });
+              setIsQrShareOpen(true);
+              if (!guestQrSvg) {
+                fetchHotelQrSvg(hotelSlug)
+                  .then((svg) => {
+                    if (svg) setGuestQrSvg(svg);
+                  })
+                  .catch(() => {});
               }
             }}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-lg"
+            title="QR Kodu Göstər & Bölüş"
+            className="absolute top-3 right-3 px-3 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center gap-1.5 text-white border border-white/20 shadow-lg text-[11px] font-bold"
           >
-            <IOSIcon name="Share" size={15} />
+            <IOSIcon name="Share" size={14} />
+            <span>QR</span>
           </motion.button>
         </motion.div>
 
@@ -234,7 +288,7 @@ export const GuestPortalPage: React.FC = () => {
               className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[var(--border-color)] shadow-xl bg-[var(--bg-card)] flex-shrink-0"
             >
               <img 
-                src={hotel.logo} 
+                src={displayLogo} 
                 alt="Logo" 
                 className="w-full h-full object-cover"
               />
@@ -247,13 +301,13 @@ export const GuestPortalPage: React.FC = () => {
                 <span className="text-[11px] text-[var(--text-muted)] ml-1 font-medium">{t.starsLabel}</span>
               </div>
               <h1 className="text-xl font-bold tracking-tight text-[var(--text-main)] truncate">
-                {t.hotelName}
+                {displayHotelName}
               </h1>
             </div>
           </motion.div>
 
           <motion.p variants={itemVariants} className="text-xs text-[var(--text-muted)] leading-relaxed mb-5">
-            {t.hotelDescription}
+            {displayHotelBio}
           </motion.p>
 
           {/* 4 Quick Action Buttons with Floating Spring Micro-Interactions */}
@@ -295,7 +349,7 @@ export const GuestPortalPage: React.FC = () => {
               whileHover={{ y: -3, scale: 1.03 }}
               whileTap={{ scale: 0.91 }}
               transition={{ type: 'spring', stiffness: 450, damping: 18 }}
-              href={`https://wa.me/${hotel.whatsapp}`}
+              href={`https://wa.me/${displayWhatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-emerald-500/50 transition-colors group"
@@ -313,7 +367,7 @@ export const GuestPortalPage: React.FC = () => {
               whileHover={{ y: -3, scale: 1.03 }}
               whileTap={{ scale: 0.91 }}
               transition={{ type: 'spring', stiffness: 450, damping: 18 }}
-              href={`tel:${hotel.phone}`}
+              href={`tel:${displayPhone}`}
               className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[#A78BFA]/50 transition-colors group"
             >
               <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center mb-1.5 border border-[var(--border-color)] group-hover:scale-105 transition-transform">
@@ -373,7 +427,7 @@ export const GuestPortalPage: React.FC = () => {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              {t.categories.map((category) => (
+              {displayCategories.map((category) => (
                 <motion.div variants={itemVariants} key={category.id}>
                   <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1 mb-2.5">
                     {category.title}
@@ -439,7 +493,7 @@ export const GuestPortalPage: React.FC = () => {
                 <span className="text-[11px] text-[#A78BFA] font-bold">{t.allResort}</span>
               </div>
 
-              {t.activities.map((act) => (
+              {displayActivities.map((act) => (
                 <motion.div 
                   key={act.id} 
                   whileHover={{ scale: 1.015, y: -2 }}
@@ -468,8 +522,8 @@ export const GuestPortalPage: React.FC = () => {
             </motion.div>
           )}
 
-          {/* Wi-Fi Quick Card with Tactile Press Feedback */}
-          <motion.div variants={itemVariants} className="mt-6">
+          {/* Wi-Fi Quick Card & Save Contact (.vcf vCard) with Tactile Press Feedback */}
+          <motion.div variants={itemVariants} className="mt-6 space-y-2.5">
             <motion.div 
               whileHover={{ scale: 1.015, y: -1 }}
               whileTap={{ scale: 0.97 }}
@@ -495,6 +549,40 @@ export const GuestPortalPage: React.FC = () => {
                 {t.wifiBanner.connectBtn}
               </motion.button>
             </motion.div>
+
+            {/* vCard: Otelin Nömrəsini və Ünvanını Telefona Yaz (.vcf) */}
+            <motion.a
+              whileHover={{ scale: 1.015, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+              href={publicService.getVCardUrl(hotelSlug)}
+              className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between cursor-pointer shadow-sm hover:border-[#A78BFA]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <IOSIcon name="Phone" size={18} />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-[var(--text-main)] block">
+                    {selectedLang === 'az'
+                      ? '📇 Kontaktı Yadda Saxla (.vcf)'
+                      : selectedLang === 'ru'
+                      ? '📇 Сохранить Контакт Отеля (.vcf)'
+                      : '📇 Save Hotel Contact (.vcf)'}
+                  </span>
+                  <span className="text-[11px] text-[var(--text-muted)] block">
+                    {selectedLang === 'az'
+                      ? 'Otelin nömrə və ünvanını bir kliklə telefona yazın'
+                      : selectedLang === 'ru'
+                      ? 'Добавьте номер и адрес отеля в телефонную книгу'
+                      : 'Add hotel phone & address to your contacts'}
+                  </span>
+                </div>
+              </div>
+              <div className="text-[var(--text-muted)]/60 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all">
+                <IOSIcon name="ChevronRight" size={16} />
+              </div>
+            </motion.a>
           </motion.div>
 
           {/* Hotel External Booking & Review Platforms with Official High-Res Tiles */}
@@ -732,6 +820,86 @@ export const GuestPortalPage: React.FC = () => {
           pass={hotel.wifi.pass}
           t={t.wifiModal}
         />
+
+        {/* QR Bölüş Modal (Share QR for Other Room Guests) */}
+        <AnimatePresence>
+          {isQrShareOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 bg-black/75 backdrop-blur-md"
+                onClick={() => setIsQrShareOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.88, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 16 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="relative w-full max-w-sm rounded-[32px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 shadow-2xl z-10 text-center text-[var(--text-main)] space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-[var(--text-main)]">{displayHotelName} — QR Kod</h3>
+                  <button
+                    onClick={() => setIsQrShareOpen(false)}
+                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[var(--text-muted)]"
+                  >
+                    <IOSIcon name="Close" size={16} />
+                  </button>
+                </div>
+
+                <p className="text-xs text-[var(--text-muted)]">
+                  {selectedLang === 'az'
+                    ? 'Otaqdakı digər qonaqlar bu QR kodu öz telefon kamerası ilə oxudaraq menyunu aça bilərlər.'
+                    : selectedLang === 'ru'
+                    ? 'Другие гости могут отсканировать этот QR-код камерой телефона.'
+                    : 'Other guests in your room can scan this QR code to open the digital concierge.'}
+                </p>
+
+                <div className="bg-white p-5 rounded-[28px] inline-block shadow-xl border-2 border-[var(--border-color)]">
+                  {guestQrSvg ? (
+                    <div
+                      className="w-56 h-56 flex items-center justify-center mx-auto [&>svg]:w-full [&>svg]:h-full"
+                      dangerouslySetInnerHTML={{ __html: guestQrSvg }}
+                    />
+                  ) : (
+                    <img
+                      src={publicService.getQrSvgUrl(hotelSlug)}
+                      alt="Hotel QR Code"
+                      className="w-56 h-56 object-contain mx-auto"
+                    />
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: displayHotelName, url: window.location.href });
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                      }
+                    }}
+                    className="flex-1 py-3 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold shadow-md shadow-[#A78BFA]/20 flex items-center justify-center gap-1.5"
+                  >
+                    <IOSIcon name="Share" size={14} />
+                    <span>{selectedLang === 'az' ? 'Paylaş' : selectedLang === 'ru' ? 'Поделиться' : 'Share'}</span>
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsQrShareOpen(false)}
+                    className="px-5 py-3 rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-semibold"
+                  >
+                    {t.serviceModal.closeBtn}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Service Quick Detail Modal with iOS Spring Pop-up */}
         <AnimatePresence>

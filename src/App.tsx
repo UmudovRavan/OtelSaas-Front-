@@ -53,6 +53,9 @@ export const App: React.FC = () => {
             }
           />
 
+          {/* Direct slug route for backend /q/{slug} 302 redirect (${frontendBaseUrl}/{slug}) */}
+          <Route path="/:slug" element={<GuestPortalPage />} />
+
           {/* Fallback to Guest Portal */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

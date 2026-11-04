@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { IOSIcon } from '../../components/common/IOSIcon';
 import { receptionService, InquiryItem } from '../../services/api/receptionService';
@@ -20,6 +20,10 @@ export interface ReceptionInquiry {
 export const ReceptionPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryTenantId = searchParams.get('tenantId');
+  const activeSlug = searchParams.get('slug') || user?.tenantSlug || 'hotel-resort';
+  const activeHotelName = user?.tenantName || (searchParams.get('slug') ? searchParams.get('slug') : 'Hotel & Resort Baku');
 
   // Settings & Theme
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
@@ -49,7 +53,7 @@ export const ReceptionPage: React.FC = () => {
 
   const fetchInquiries = useCallback(async () => {
     try {
-      const data = await receptionService.getInquiries();
+      const data = await receptionService.getInquiries(queryTenantId);
       if (data && Array.isArray(data)) {
         const mapped: ReceptionInquiry[] = data.map((d: InquiryItem) => {
           let st: ReceptionInquiry['status'] = 'new';
@@ -75,7 +79,7 @@ export const ReceptionPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [queryTenantId]);
 
   useEffect(() => {
     fetchInquiries();
@@ -129,7 +133,7 @@ export const ReceptionPage: React.FC = () => {
 
     try {
       const backendStatus = newStatus === 'completed' ? 2 : (newStatus === 'cancelled' ? 3 : 1);
-      await receptionService.updateInquiryStatus(id, backendStatus as any);
+      await receptionService.updateInquiryStatus(id, backendStatus as any, queryTenantId);
     } catch (e) {
       console.warn('Failed to update status on backend', e);
     }
@@ -151,7 +155,7 @@ export const ReceptionPage: React.FC = () => {
     if (!newRoom.trim() || !newPhone.trim()) return;
 
     try {
-      await publicService.submitInquiry('hotel-resort', {
+      await publicService.submitInquiry(activeSlug, {
         fullName: newName.trim() || 'Otel Qonağı',
         phoneNumber: newPhone.trim(),
         roomNumber: newRoom.trim(),
@@ -211,7 +215,7 @@ export const ReceptionPage: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-[var(--text-muted)]/80 font-normal">
-                Hotel & Resort Baku • Canlı Qonaq Müraciətləri
+                {activeHotelName} (/hotel/{activeSlug}) • Canlı Qonaq Müraciətləri
               </p>
             </div>
           </div>
@@ -233,9 +237,9 @@ export const ReceptionPage: React.FC = () => {
             </button>
 
             {/* Back link for HotelAdmin */}
-            {user?.role === 'HotelAdmin' && (
+            {(user?.role === 'HotelAdmin' || queryTenantId) && (
               <button
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate(queryTenantId ? `/admin?tenantId=${queryTenantId}&slug=${activeSlug}` : '/admin')}
                 className="px-3.5 py-1.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-semibold hover:border-[#A78BFA] transition-colors"
               >
                 ← Admin Panelinə Qayıt

@@ -13,17 +13,25 @@ export interface InquiryItem {
   createdAtUtc: string;
 }
 
+function getTenantQueryParam(overrideTenantId?: string | null): Record<string, string> | undefined {
+  const tid = overrideTenantId || new URLSearchParams(window.location.search).get('tenantId');
+  return tid ? { tenantId: tid } : undefined;
+}
+
 export const receptionService = {
-  async getInquiries(): Promise<InquiryItem[]> {
-    const response = await apiClient.get<ApiResponse<InquiryItem[]>>('/api/hotel-admin/inquiries');
+  async getInquiries(tenantId?: string | null): Promise<InquiryItem[]> {
+    const response = await apiClient.get<ApiResponse<InquiryItem[]>>('/api/hotel-admin/inquiries', {
+      params: getTenantQueryParam(tenantId),
+    });
     return response.data.data || [];
   },
 
-  async updateInquiryStatus(id: string, status: 1 | 2 | 3): Promise<boolean> {
-    const response = await apiClient.patch<ApiResponse<boolean>>(`/api/hotel-admin/inquiries/${id}/status`, {
-      status,
-    });
+  async updateInquiryStatus(id: string, status: 1 | 2 | 3, tenantId?: string | null): Promise<boolean> {
+    const response = await apiClient.patch<ApiResponse<boolean>>(
+      `/api/hotel-admin/inquiries/${id}/status`,
+      { status },
+      { params: getTenantQueryParam(tenantId) }
+    );
     return response.data.success;
   },
 };
-
