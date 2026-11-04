@@ -1,11 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { defaultHotelData } from './guestData';
 import { IOSIcon } from '../../components/common/IOSIcon';
 import { InquirySheet } from './components/InquirySheet';
 import { WifiModal } from './components/WifiModal';
 import { translations, Language, ServiceItemTranslation } from '../../utils/translations';
 import { publicService, PublicHotelProfile } from '../../services/api/publicService';
+
+// Animation variants for staggered cascading entry
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.02,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 350,
+      damping: 24,
+    },
+  },
+};
 
 export const GuestPortalPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
@@ -80,15 +106,22 @@ export const GuestPortalPage: React.FC = () => {
   const bookingUrl = resolveLinkUrl('booking', 'https://www.booking.com');
   const tripAdvisorUrl = resolveLinkUrl('tripadvisor', 'https://www.tripadvisor.com');
   const googleReviewUrl = resolveLinkUrl('google', liveHotel?.mapUrl || 'https://maps.google.com/?q=Baku');
+  const airbnbUrl = resolveLinkUrl('airbnb', 'https://www.airbnb.com');
   const instagramUrl = resolveLinkUrl('instagram', 'https://instagram.com');
   const facebookUrl = resolveLinkUrl('facebook', 'https://facebook.com');
+  const tiktokUrl = resolveLinkUrl('tiktok', 'https://tiktok.com');
   const youtubeUrl = resolveLinkUrl('youtube', 'https://youtube.com');
   const telegramUrl = resolveLinkUrl('telegram', liveHotel?.telegram ? `https://t.me/${liveHotel.telegram.replace('@', '')}` : 'https://t.me/hotelresort_bot');
 
   if (isSuspended) {
     return (
       <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] flex items-center justify-center p-6 selection:bg-[#A78BFA]">
-        <div className="w-full max-w-sm rounded-[32px] bg-[var(--bg-card)] border border-rose-500/30 p-8 text-center shadow-2xl space-y-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="w-full max-w-sm rounded-[32px] bg-[var(--bg-card)] border border-rose-500/30 p-8 text-center shadow-2xl space-y-4"
+        >
           <div className="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-3xl">
             ⚠️
           </div>
@@ -99,7 +132,7 @@ export const GuestPortalPage: React.FC = () => {
           <p className="text-[11px] text-[var(--text-muted)]/60 pt-2 border-t border-[var(--border-color)]">
             Zəhmət olmasa birbaşa otelin qəbul şöbəsi (Reception) ilə əlaqə saxlayın.
           </p>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -107,78 +140,105 @@ export const GuestPortalPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] flex justify-center selection:bg-[#A78BFA] selection:text-black transition-colors duration-200">
       {/* Mobile Container */}
-      <div className="w-full max-w-[430px] min-h-screen bg-[var(--bg-main)] flex flex-col relative pb-12 border-x border-[var(--border-color)]">
-        
-        {/* Top Bar: Status + Theme Toggle + Language Segmented Control */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="w-full max-w-[430px] min-h-screen bg-[var(--bg-main)] flex flex-col relative pb-12 border-x border-[var(--border-color)] overflow-x-hidden"
+      >
+        {/* Top Bar: Status + Theme Toggle + Fluid Segmented Language Control */}
         <header className="sticky top-0 z-40 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--border-color)] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block shadow-sm shadow-emerald-500/50" />
             <span className="text-xs font-semibold text-[var(--text-muted)]">
               {t.statusActive}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* iOS Theme Switcher (Dark / Light) */}
-            <button
+            {/* iOS Theme Switcher with Rotation Micro-Interaction */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ rotate: 180, scale: 0.85 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={() => setIsDarkMode(!isDarkMode)}
               title={isDarkMode ? "Light Mode" : "Dark Mode"}
-              className="w-8 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[#A78BFA] active:scale-95 transition-transform shadow-sm"
+              className="w-8 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[#A78BFA] shadow-sm"
             >
               {isDarkMode ? <IOSIcon name="Sun" size={16} /> : <IOSIcon name="Moon" size={15} />}
-            </button>
+            </motion.button>
 
-            {/* iOS Segmented Language Bar */}
-            <div className="flex items-center gap-1 bg-[var(--bg-card)] rounded-full p-1 border border-[var(--border-color)]">
-              {(['az', 'en', 'ru'] as const).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setSelectedLang(lang)}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-full uppercase transition-all ${
-                    selectedLang === lang
-                      ? 'bg-[#A78BFA] text-black shadow-sm'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                  }`}
-                >
-                  {lang}
-                </button>
-              ))}
+            {/* Apple iOS Fluid Segmented Language Slider */}
+            <div className="relative flex items-center bg-[var(--bg-card)] rounded-full p-1 border border-[var(--border-color)]">
+              {(['az', 'en', 'ru'] as const).map((lang) => {
+                const isActive = selectedLang === lang;
+                return (
+                  <motion.button
+                    key={lang}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setSelectedLang(lang)}
+                    className={`relative z-10 px-2.5 py-1 text-[11px] font-bold uppercase transition-colors duration-150 ${
+                      isActive ? 'text-black' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="activeLangBubble"
+                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        className="absolute inset-0 bg-[#A78BFA] rounded-full shadow-sm"
+                        style={{ zIndex: -1 }}
+                      />
+                    )}
+                    {lang}
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
         </header>
 
-        {/* Hero Cover Image */}
-        <div className="relative w-full h-48 overflow-hidden bg-slate-900">
-          <img 
+        {/* Hero Cover Image with Smooth Cinematic Parallax */}
+        <motion.div variants={itemVariants} className="relative w-full h-48 overflow-hidden bg-slate-900">
+          <motion.img 
+            initial={{ scale: 1.06 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.9, ease: 'easeOut' }}
             src={hotel.coverImage} 
             alt={t.hotelName}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/40 to-transparent" />
           
-          {/* Share Button */}
-          <button 
+          {/* Share Button with Spring Tap */}
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.88 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 17 }}
             onClick={() => {
               if (navigator.share) {
                 navigator.share({ title: t.hotelName, url: window.location.href });
               }
             }}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95 transition-transform"
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-lg"
           >
             <IOSIcon name="Share" size={15} />
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
         {/* Hotel Profile & Info */}
         <div className="px-4 -mt-12 relative z-10">
-          <div className="flex items-end gap-3.5 mb-3">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[var(--border-color)] shadow-xl bg-[var(--bg-card)] flex-shrink-0">
+          <motion.div variants={itemVariants} className="flex items-end gap-3.5 mb-3">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: -2 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 20 }}
+              className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[var(--border-color)] shadow-xl bg-[var(--bg-card)] flex-shrink-0"
+            >
               <img 
                 src={hotel.logo} 
                 alt="Logo" 
                 className="w-full h-full object-cover"
               />
-            </div>
+            </motion.div>
             <div className="pb-1 min-w-0 flex-1">
               <div className="flex items-center gap-1 text-amber-400 text-xs mb-1">
                 {[...Array(hotel.stars)].map((_, i) => (
@@ -190,118 +250,152 @@ export const GuestPortalPage: React.FC = () => {
                 {t.hotelName}
               </h1>
             </div>
-          </div>
+          </motion.div>
 
-          <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-5">
+          <motion.p variants={itemVariants} className="text-xs text-[var(--text-muted)] leading-relaxed mb-5">
             {t.hotelDescription}
-          </p>
+          </motion.p>
 
-          {/* 4 Quick Action Buttons (Ionicons 5 iOS Pack) */}
-          <div className="grid grid-cols-4 gap-2 mb-6">
+          {/* 4 Quick Action Buttons with Floating Spring Micro-Interactions */}
+          <motion.div variants={itemVariants} className="grid grid-cols-4 gap-2 mb-6">
             {/* Otaq Servisi */}
-            <button
+            <motion.button
+              whileHover={{ y: -3, scale: 1.03 }}
+              whileTap={{ scale: 0.91 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 18 }}
               onClick={() => setIsInquiryOpen(true)}
-              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[#A78BFA]/30 active:scale-95 transition-transform shadow-sm"
+              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[#A78BFA]/30 shadow-sm hover:border-[#A78BFA] transition-colors group"
             >
-              <div className="w-10 h-10 rounded-xl bg-[#A78BFA] text-black flex items-center justify-center mb-1.5 shadow">
+              <div className="w-10 h-10 rounded-xl bg-[#A78BFA] text-black flex items-center justify-center mb-1.5 shadow-md shadow-[#A78BFA]/30 group-hover:scale-105 transition-transform">
                 <IOSIcon name="Bell" size={19} />
               </div>
               <span className="text-[11px] font-bold text-[var(--text-main)] truncate max-w-full px-1">
                 {t.quickActions.roomService}
               </span>
-            </button>
+            </motion.button>
 
             {/* Wi-Fi */}
-            <button
+            <motion.button
+              whileHover={{ y: -3, scale: 1.03 }}
+              whileTap={{ scale: 0.91 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 18 }}
               onClick={() => setIsWifiOpen(true)}
-              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] active:scale-95 transition-transform shadow-sm"
+              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[#A78BFA]/50 transition-colors group"
             >
-              <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center mb-1.5 border border-[var(--border-color)]">
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center mb-1.5 border border-[var(--border-color)] group-hover:scale-105 transition-transform">
                 <IOSIcon name="Wifi" size={19} />
               </div>
               <span className="text-[11px] font-semibold text-[var(--text-muted)] truncate max-w-full px-1">
                 {t.quickActions.wifi}
               </span>
-            </button>
+            </motion.button>
 
             {/* WhatsApp */}
-            <a
+            <motion.a
+              whileHover={{ y: -3, scale: 1.03 }}
+              whileTap={{ scale: 0.91 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 18 }}
               href={`https://wa.me/${hotel.whatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] active:scale-95 transition-transform shadow-sm"
+              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-emerald-500/50 transition-colors group"
             >
-              <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center mb-1.5 border border-[var(--border-color)]">
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-emerald-400 flex items-center justify-center mb-1.5 border border-[var(--border-color)] group-hover:scale-105 transition-transform">
                 <IOSIcon name="Whatsapp" size={19} />
               </div>
               <span className="text-[11px] font-semibold text-[var(--text-muted)] truncate max-w-full px-1">
                 {t.quickActions.whatsapp}
               </span>
-            </a>
+            </motion.a>
 
             {/* Zəng Et - Pure iOS Phone Call Icon */}
-            <a
+            <motion.a
+              whileHover={{ y: -3, scale: 1.03 }}
+              whileTap={{ scale: 0.91 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 18 }}
               href={`tel:${hotel.phone}`}
-              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] active:scale-95 transition-transform shadow-sm"
+              className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[#A78BFA]/50 transition-colors group"
             >
-              <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center mb-1.5 border border-[var(--border-color)]">
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center mb-1.5 border border-[var(--border-color)] group-hover:scale-105 transition-transform">
                 <IOSIcon name="Phone" size={18} />
               </div>
               <span className="text-[11px] font-semibold text-[var(--text-muted)] truncate max-w-full px-1">
                 {t.quickActions.call}
               </span>
-            </a>
-          </div>
+            </motion.a>
+          </motion.div>
 
-          {/* Tabs: Services vs Activities */}
-          <div className="bg-[var(--bg-card)] p-1 rounded-2xl flex gap-1 mb-6 border border-[var(--border-color)] shadow-sm">
+          {/* Fluid Sliding Tabs: Services vs Activities */}
+          <motion.div variants={itemVariants} className="relative bg-[var(--bg-card)] p-1 rounded-2xl flex gap-1 mb-6 border border-[var(--border-color)] shadow-sm">
             <button
               onClick={() => setActiveTab('services')}
-              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'services'
-                  ? 'bg-[#A78BFA] text-black shadow'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-150 flex items-center justify-center gap-1.5 ${
+                activeTab === 'services' ? 'text-black' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
               }`}
             >
+              {activeTab === 'services' && (
+                <motion.span
+                  layoutId="activeTabCapsule"
+                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                  className="absolute inset-0 bg-[#A78BFA] rounded-xl shadow-sm"
+                  style={{ zIndex: -1 }}
+                />
+              )}
               <IOSIcon name="Sparkles" size={15} />
               <span>{t.tabs.services}</span>
             </button>
+
             <button
               onClick={() => setActiveTab('activities')}
-              className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'activities'
-                  ? 'bg-[#A78BFA] text-black shadow'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-150 flex items-center justify-center gap-1.5 ${
+                activeTab === 'activities' ? 'text-black' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
               }`}
             >
+              {activeTab === 'activities' && (
+                <motion.span
+                  layoutId="activeTabCapsule"
+                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                  className="absolute inset-0 bg-[#A78BFA] rounded-xl shadow-sm"
+                  style={{ zIndex: -1 }}
+                />
+              )}
               <IOSIcon name="Calendar" size={15} />
               <span>{t.tabs.activities}</span>
             </button>
-          </div>
+          </motion.div>
 
           {/* Tab Content 1: Categories & Menu */}
           {activeTab === 'services' && (
-            <div className="space-y-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
               {t.categories.map((category) => (
-                <div key={category.id}>
+                <motion.div variants={itemVariants} key={category.id}>
                   <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1 mb-2.5">
                     {category.title}
                   </h2>
 
                   <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] divide-y divide-[var(--border-color)] overflow-hidden shadow-sm">
                     {category.items.map((item) => (
-                      <div
+                      <motion.div
                         key={item.id}
+                        whileHover={{ x: 4, backgroundColor: 'rgba(167, 139, 250, 0.06)' }}
+                        whileTap={{ scale: 0.98, backgroundColor: 'rgba(167, 139, 250, 0.12)' }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                         onClick={() => handleLinkClick(item)}
-                        className="p-3.5 flex items-center justify-between cursor-pointer active:bg-[#A78BFA]/5 transition-colors"
+                        className="p-3.5 flex items-center justify-between cursor-pointer transition-colors group"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center flex-shrink-0 border border-[var(--border-color)]">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--bg-subcard)] text-[#A78BFA] flex items-center justify-center flex-shrink-0 border border-[var(--border-color)] group-hover:scale-105 group-hover:border-[#A78BFA]/50 transition-all">
                             <IOSIcon name={item.iconName} size={19} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-[var(--text-main)] tracking-tight truncate">
+                              <span className="text-sm font-bold text-[var(--text-main)] tracking-tight truncate group-hover:text-[#A78BFA] transition-colors">
                                 {item.title}
                               </span>
                               {item.badge && (
@@ -318,20 +412,26 @@ export const GuestPortalPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="text-[var(--text-muted)]/50 flex-shrink-0 ml-2">
+                        <div className="text-[var(--text-muted)]/50 flex-shrink-0 ml-2 group-hover:text-[#A78BFA] group-hover:translate-x-1 transition-all">
                           <IOSIcon name="ChevronRight" size={15} />
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {/* Tab Content 2: Activities */}
           {activeTab === 'activities' && (
-            <div className="space-y-3">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-3"
+            >
               <div className="flex items-center justify-between px-1 mb-2">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   {t.todaySchedule}
@@ -340,9 +440,12 @@ export const GuestPortalPage: React.FC = () => {
               </div>
 
               {t.activities.map((act) => (
-                <div 
+                <motion.div 
                   key={act.id} 
-                  className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-start justify-between shadow-sm"
+                  whileHover={{ scale: 1.015, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+                  className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-start justify-between shadow-sm hover:border-[#A78BFA]/40 transition-colors"
                 >
                   <div className="space-y-1">
                     <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#A78BFA]/20 text-[#8B5CF6] dark:text-[#A78BFA]">
@@ -360,19 +463,22 @@ export const GuestPortalPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
-          {/* Wi-Fi Quick Card */}
-          <div className="mt-6">
-            <div 
+          {/* Wi-Fi Quick Card with Tactile Press Feedback */}
+          <motion.div variants={itemVariants} className="mt-6">
+            <motion.div 
+              whileHover={{ scale: 1.015, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 20 }}
               onClick={() => setIsWifiOpen(true)}
-              className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform shadow-sm"
+              className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between cursor-pointer shadow-sm hover:border-[#A78BFA]/50 transition-colors group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center group-hover:scale-105 transition-transform">
                   <IOSIcon name="Wifi" size={19} />
                 </div>
                 <div>
@@ -382,150 +488,216 @@ export const GuestPortalPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <button className="text-xs font-bold text-black bg-[#A78BFA] px-3.5 py-1.5 rounded-xl shadow-sm">
+              <motion.button 
+                whileTap={{ scale: 0.88 }}
+                className="text-xs font-bold text-black bg-[#A78BFA] px-3.5 py-1.5 rounded-xl shadow-md shadow-[#A78BFA]/20"
+              >
                 {t.wifiBanner.connectBtn}
-              </button>
-            </div>
-          </div>
+              </motion.button>
+            </motion.div>
+          </motion.div>
 
-          {/* Hotel External Booking & Review Platforms */}
-          <div className="mt-6 space-y-2.5">
+          {/* Hotel External Booking & Review Platforms with Official High-Res Tiles */}
+          <motion.div variants={itemVariants} className="mt-6 space-y-2.5">
             <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1">
               {selectedLang === 'az' ? 'Onlayn Rezervasiya & Rəylər' : selectedLang === 'ru' ? 'Онлайн Бронирование и Отзывы' : 'Online Booking & Reviews'}
             </h2>
 
             <div className="rounded-[24px] bg-[var(--bg-card)] border border-[var(--border-color)] divide-y divide-[var(--border-color)] overflow-hidden shadow-sm">
               {/* Booking.com */}
-              <a
+              <motion.a
+                whileHover={{ x: 3, backgroundColor: 'rgba(0, 53, 128, 0.08)' }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 href={bookingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 flex items-center justify-between hover:bg-[var(--bg-subcard)] transition-colors active:scale-[0.99]"
+                className="p-3.5 flex items-center justify-between transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#003580]/15 text-[#003580] dark:text-[#5b95ea] flex items-center justify-center">
-                    <IOSIcon name="Booking" size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-[#003580] text-white flex items-center justify-center shadow-md shadow-[#003580]/20 flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <IOSIcon name="Booking" size={22} />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-[var(--text-main)] block">Booking.com</span>
+                    <span className="text-xs font-bold text-[var(--text-main)] block group-hover:text-[#5b95ea] transition-colors">Booking.com</span>
                     <span className="text-[11px] text-[var(--text-muted)] block">
                       {selectedLang === 'az' ? 'Otaq rezervasiyası və xüsusi təkliflər' : selectedLang === 'ru' ? 'Бронирование номеров и спецпредложения' : 'Room reservation & special deals'}
                     </span>
                   </div>
                 </div>
-                <div className="text-[var(--text-muted)]/50">
+                <div className="text-[var(--text-muted)]/50 group-hover:text-[#5b95ea] group-hover:translate-x-1 transition-all">
                   <IOSIcon name="ChevronRight" size={16} />
                 </div>
-              </a>
+              </motion.a>
 
               {/* TripAdvisor */}
-              <a
+              <motion.a
+                whileHover={{ x: 3, backgroundColor: 'rgba(0, 175, 135, 0.08)' }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 href={tripAdvisorUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 flex items-center justify-between hover:bg-[var(--bg-subcard)] transition-colors active:scale-[0.99]"
+                className="p-3.5 flex items-center justify-between transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#00AF87]/15 text-[#00AF87] flex items-center justify-center">
-                    <IOSIcon name="TripAdvisor" size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-[#00AF87] text-white flex items-center justify-center shadow-md shadow-[#00AF87]/20 flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <IOSIcon name="TripAdvisor" size={22} />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-[var(--text-main)] block">TripAdvisor</span>
+                    <span className="text-xs font-bold text-[var(--text-main)] block group-hover:text-[#00AF87] transition-colors">TripAdvisor</span>
                     <span className="text-[11px] text-[var(--text-muted)] block">
                       {selectedLang === 'az' ? 'Qonaq rəyləri və səyahətçi tövsiyələri' : selectedLang === 'ru' ? 'Отзывы гостей и рекомендации' : 'Guest reviews and traveler ratings'}
                     </span>
                   </div>
                 </div>
-                <div className="text-[var(--text-muted)]/50">
+                <div className="text-[var(--text-muted)]/50 group-hover:text-[#00AF87] group-hover:translate-x-1 transition-all">
                   <IOSIcon name="ChevronRight" size={16} />
                 </div>
-              </a>
+              </motion.a>
 
               {/* Google Reviews & Maps */}
-              <a
+              <motion.a
+                whileHover={{ x: 3, backgroundColor: 'rgba(234, 67, 53, 0.08)' }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 href={googleReviewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 flex items-center justify-between hover:bg-[var(--bg-subcard)] transition-colors active:scale-[0.99]"
+                className="p-3.5 flex items-center justify-between transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EA4335]/15 text-[#EA4335] flex items-center justify-center">
-                    <IOSIcon name="GoogleMaps" size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-[#EA4335] text-white flex items-center justify-center shadow-md shadow-[#EA4335]/20 flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <IOSIcon name="GoogleMaps" size={22} />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-[var(--text-main)] block">Google Maps & Rəylər</span>
+                    <span className="text-xs font-bold text-[var(--text-main)] block group-hover:text-[#EA4335] transition-colors">Google Maps & Rəylər</span>
                     <span className="text-[11px] text-[var(--text-muted)] block">
                       {selectedLang === 'az' ? 'Dəqiq xəritə naviqasiyası və rəy yaz' : selectedLang === 'ru' ? 'Навигация по карте и отзывы' : 'Map directions & rate us on Google'}
                     </span>
                   </div>
                 </div>
-                <div className="text-[var(--text-muted)]/50">
+                <div className="text-[var(--text-muted)]/50 group-hover:text-[#EA4335] group-hover:translate-x-1 transition-all">
                   <IOSIcon name="ChevronRight" size={16} />
                 </div>
-              </a>
-            </div>
-          </div>
+              </motion.a>
 
-          {/* Social Media Channels */}
-          <div className="mt-6 space-y-2.5">
+              {/* Airbnb */}
+              <motion.a
+                whileHover={{ x: 3, backgroundColor: 'rgba(255, 56, 92, 0.08)' }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                href={airbnbUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3.5 flex items-center justify-between transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#FF385C] text-white flex items-center justify-center shadow-md shadow-[#FF385C]/20 flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <IOSIcon name="Airbnb" size={22} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-[var(--text-main)] block group-hover:text-[#FF385C] transition-colors">Airbnb</span>
+                    <span className="text-[11px] text-[var(--text-muted)] block">
+                      {selectedLang === 'az' ? 'Xüsusi suitlər və qonaqlama seçimləri' : selectedLang === 'ru' ? 'Специальные люксы и апартаменты' : 'Special suites & luxury stays'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[var(--text-muted)]/50 group-hover:text-[#FF385C] group-hover:translate-x-1 transition-all">
+                  <IOSIcon name="ChevronRight" size={16} />
+                </div>
+              </motion.a>
+            </div>
+          </motion.div>
+
+          {/* Social Media Channels with 3D Spring Lift Feedback */}
+          <motion.div variants={itemVariants} className="mt-6 space-y-2.5">
             <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1">
               {selectedLang === 'az' ? 'Sosial Şəbəkələrdə Biz' : selectedLang === 'ru' ? 'Мы в Социальных Сетях' : 'Follow Us on Social Media'}
             </h2>
 
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-5 gap-2">
               {/* Instagram */}
-              <a
+              <motion.a
+                whileHover={{ y: -5, scale: 1.08 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 14 }}
                 href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform hover:border-pink-500/40"
+                className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm hover:border-pink-500/50 transition-colors group"
               >
-                <div className="w-9 h-9 rounded-xl bg-pink-500/15 text-pink-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white flex items-center justify-center shadow-md shadow-pink-500/25 group-hover:shadow-pink-500/40 transition-shadow">
                   <IOSIcon name="Instagram" size={20} />
                 </div>
-                <span className="text-[11px] font-semibold text-[var(--text-main)]">Instagram</span>
-              </a>
+                <span className="text-[10px] font-semibold text-[var(--text-main)] truncate max-w-full">Instagram</span>
+              </motion.a>
+
+              {/* TikTok */}
+              <motion.a
+                whileHover={{ y: -5, scale: 1.08 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 14 }}
+                href={tiktokUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm hover:border-neutral-500/50 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-black border border-neutral-700 text-white flex items-center justify-center shadow-md shadow-black/40 group-hover:shadow-black/70 transition-shadow">
+                  <IOSIcon name="TikTok" size={19} />
+                </div>
+                <span className="text-[10px] font-semibold text-[var(--text-main)] truncate max-w-full">TikTok</span>
+              </motion.a>
 
               {/* Facebook */}
-              <a
+              <motion.a
+                whileHover={{ y: -5, scale: 1.08 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 14 }}
                 href={facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform hover:border-blue-500/40"
+                className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm hover:border-blue-500/50 transition-colors group"
               >
-                <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#1877F2] text-white flex items-center justify-center shadow-md shadow-[#1877F2]/25 group-hover:shadow-[#1877F2]/40 transition-shadow">
                   <IOSIcon name="Facebook" size={20} />
                 </div>
-                <span className="text-[11px] font-semibold text-[var(--text-main)]">Facebook</span>
-              </a>
+                <span className="text-[10px] font-semibold text-[var(--text-main)] truncate max-w-full">Facebook</span>
+              </motion.a>
 
               {/* YouTube */}
-              <a
+              <motion.a
+                whileHover={{ y: -5, scale: 1.08 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 14 }}
                 href={youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform hover:border-red-500/40"
+                className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm hover:border-red-500/50 transition-colors group"
               >
-                <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#FF0000] text-white flex items-center justify-center shadow-md shadow-red-500/25 group-hover:shadow-red-500/40 transition-shadow">
                   <IOSIcon name="YouTube" size={20} />
                 </div>
-                <span className="text-[11px] font-semibold text-[var(--text-main)]">YouTube</span>
-              </a>
+                <span className="text-[10px] font-semibold text-[var(--text-main)] truncate max-w-full">YouTube</span>
+              </motion.a>
 
               {/* Telegram */}
-              <a
+              <motion.a
+                whileHover={{ y: -5, scale: 1.08 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 14 }}
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform hover:border-sky-500/40"
+                className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1.5 shadow-sm hover:border-sky-500/50 transition-colors group"
               >
-                <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#229ED9] text-white flex items-center justify-center shadow-md shadow-sky-500/25 group-hover:shadow-sky-500/40 transition-shadow">
                   <IOSIcon name="Telegram" size={20} />
                 </div>
-                <span className="text-[11px] font-semibold text-[var(--text-main)]">Telegram</span>
-              </a>
+                <span className="text-[10px] font-semibold text-[var(--text-main)] truncate max-w-full">Telegram</span>
+              </motion.a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Footer Info */}
           <footer className="mt-8 mb-4 text-center space-y-1">
@@ -561,39 +733,64 @@ export const GuestPortalPage: React.FC = () => {
           t={t.wifiModal}
         />
 
-        {/* Service Quick Detail Modal */}
-        {selectedService && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="absolute inset-0" onClick={() => setSelectedService(null)} />
-            <div className="relative w-full max-w-sm rounded-[24px] bg-[var(--bg-card)] border border-[var(--border-color)] p-5 shadow-2xl z-10 text-center animate-slide-up text-[var(--text-main)]">
-              <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center">
-                <IOSIcon name={selectedService.iconName} size={24} />
-              </div>
-              <h3 className="text-base font-bold text-[var(--text-main)]">{selectedService.title}</h3>
-              <p className="text-xs text-[var(--text-muted)] mt-1">{selectedService.subtitle}</p>
-              
-              <div className="mt-5 space-y-2">
-                <button
-                  onClick={() => {
-                    setSelectedService(null);
-                    setIsInquiryOpen(true);
-                  }}
-                  className="w-full py-3 rounded-xl bg-[#A78BFA] text-black text-xs font-bold active:scale-95 transition-transform shadow-md"
+        {/* Service Quick Detail Modal with iOS Spring Pop-up */}
+        <AnimatePresence>
+          {selectedService && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 bg-black/75 backdrop-blur-md"
+                onClick={() => setSelectedService(null)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.88, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 16 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="relative w-full max-w-sm rounded-[32px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 shadow-2xl z-10 text-center text-[var(--text-main)] overflow-hidden"
+              >
+                <motion.div
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 300, delay: 0.05 }}
+                  className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center shadow-lg shadow-[#A78BFA]/10"
                 >
-                  {t.serviceModal.orderBtn}
-                </button>
-                <button
-                  onClick={() => setSelectedService(null)}
-                  className="w-full py-2.5 rounded-xl bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-semibold"
-                >
-                  {t.serviceModal.closeBtn}
-                </button>
-              </div>
+                  <IOSIcon name={selectedService.iconName} size={26} />
+                </motion.div>
+                <h3 className="text-lg font-bold text-[var(--text-main)]">{selectedService.title}</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-1.5 leading-relaxed">{selectedService.subtitle}</p>
+                
+                <div className="mt-6 space-y-2.5">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 18 }}
+                    onClick={() => {
+                      setSelectedService(null);
+                      setIsInquiryOpen(true);
+                    }}
+                    className="w-full py-3.5 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold shadow-lg shadow-[#A78BFA]/25"
+                  >
+                    {t.serviceModal.orderBtn}
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedService(null)}
+                    className="w-full py-2.5 rounded-2xl bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-semibold border border-[var(--border-color)] transition-colors"
+                  >
+                    {t.serviceModal.closeBtn}
+                  </motion.button>
+                </div>
+              </motion.div>
             </div>
-          </div>
-        )}
+          )}
+        </AnimatePresence>
 
-      </div>
+      </motion.div>
     </div>
   );
 };

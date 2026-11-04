@@ -35,7 +35,10 @@ import {
   SiInstagram,
   SiFacebook,
   SiYoutube,
-  SiTelegram
+  SiTelegram,
+  SiAirbnb,
+  SiTiktok,
+  SiTrivago
 } from 'react-icons/si';
 
 interface IOSIconProps {
@@ -76,6 +79,13 @@ export const IOSIcon: React.FC<IOSIconProps> = ({
       return <SiYoutube {...props} />;
     case 'Telegram':
       return <SiTelegram {...props} />;
+    case 'Airbnb':
+      return <SiAirbnb {...props} />;
+    case 'Tiktok':
+    case 'TikTok':
+      return <SiTiktok {...props} />;
+    case 'Trivago':
+      return <SiTrivago {...props} />;
 
     // Apple iOS SF / Ionicons Standard
     case 'Phone':
