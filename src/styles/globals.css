@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark Mode (Default) */
+  --bg-main: #12101C;
+  --bg-card: #211E30;
+  --bg-subcard: #12101C;
+  --color-primary: #A78BFA;
+  --color-accent-text: #000000;
+  --text-main: #FFFFFF;
+  --text-muted: #DDD6FE;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --header-bg: rgba(18, 16, 28, 0.90);
+  --overlay-bg: rgba(0, 0, 0, 0.75);
+}
+
+.light {
+  /* Light Mode - Premium iOS */
+  --bg-main: #F4F2FA;
+  --bg-card: #FFFFFF;
+  --bg-subcard: #EDE8F9;
+  --color-primary: #8B5CF6; /* Dark modedakı bənövşəyi harmoniyada */
+  --color-accent-text: #FFFFFF;
+  --text-main: #141122;
+  --text-muted: #655B7B;
+  --border-color: rgba(0, 0, 0, 0.07);
+  --header-bg: rgba(244, 242, 250, 0.92);
+  --overlay-bg: rgba(20, 17, 34, 0.65);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", system-ui, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* iOS Hide Scrollbar */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
