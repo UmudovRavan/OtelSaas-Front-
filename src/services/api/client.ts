@@ -19,26 +19,105 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Global error logging / 401 handling
+// Response Interceptor: 401 Silent Refresh Token & Queue
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Clear token and redirect if necessary, except during login
-      if (!window.location.pathname.includes('/login')) {
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const isAuthRoute =
+      originalRequest.url?.includes('/api/auth/login') ||
+      originalRequest.url?.includes('/api/auth/refresh-token');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+      const refreshToken = localStorage.getItem('otelsaas_refresh_token');
+
+      if (!refreshToken) {
+        if (!window.location.pathname.includes('/login')) {
+          localStorage.removeItem('otelsaas_token');
+          localStorage.removeItem('token');
+          localStorage.removeItem('otelsaas_refresh_token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
+          refreshToken,
+        });
+
+        const data = response.data?.data;
+        if (data?.accessToken) {
+          localStorage.setItem('otelsaas_token', data.accessToken);
+          localStorage.setItem('token', data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem('otelsaas_refresh_token', data.refreshToken);
+          }
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          }
+          processQueue(null, data.accessToken);
+          return apiClient(originalRequest);
+        } else {
+          throw new Error('Refresh token invalid');
+        }
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
         localStorage.removeItem('otelsaas_token');
         localStorage.removeItem('token');
+        localStorage.removeItem('otelsaas_refresh_token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );

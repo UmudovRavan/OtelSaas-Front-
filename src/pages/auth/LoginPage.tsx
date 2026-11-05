@@ -44,7 +44,10 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
       setError('Zəhmət olmasa email və şifrəni daxil edin.');
       return;
     }
@@ -52,8 +55,8 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Connect to live deployed backend: POST http://31.57.77.199:5055/api/auth/login
-      const role = await login(email, password);
+      // Connect to backend: POST /api/auth/login
+      const role = await login(cleanEmail, cleanPassword);
       setIsLoading(false);
       const targetRoute = getDefaultRouteForRole(role);
       navigate(targetRoute);
@@ -64,11 +67,17 @@ export const LoginPage: React.FC = () => {
         setError(backendMsg);
       } else {
         // Fallback for mock demo if network is unreachable
-        const fallbackRole = detectRoleFromCredentials(email);
-        loginWithCredentials(email, fallbackRole, 'hotel-resort');
+        const fallbackRole = detectRoleFromCredentials(cleanEmail);
+        loginWithCredentials(cleanEmail, fallbackRole, 'hotel-resort');
         navigate(getDefaultRouteForRole(fallbackRole));
       }
     }
+  };
+
+  const handleFillDemo = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setError('');
   };
 
   return (
@@ -157,6 +166,36 @@ export const LoginPage: React.FC = () => {
             {isLoading ? "Yoxlanılır..." : "Panelə Giriş"}
           </button>
         </form>
+
+        {/* Tez Giriş Hesabları */}
+        <div className="mt-6 pt-5 border-t border-[var(--border-color)]">
+          <p className="text-[11px] font-semibold text-[var(--text-muted)] text-center mb-3 uppercase tracking-wider">
+            Test Giriş Hesabları (1 kliklə doldur)
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleFillDemo('superadmin@hotelqr.az', 'SuperAdmin123!')}
+              className="py-2 px-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-medium text-center transition-all active:scale-95"
+            >
+              👑 SuperAdmin
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFillDemo('admin@skyhill.az', 'Hotel123!')}
+              className="py-2 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium text-center transition-all active:scale-95"
+            >
+              🏨 Skyhill Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFillDemo('reception@skyhill.az', 'Reception123!')}
+              className="py-2 px-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium text-center transition-all active:scale-95"
+            >
+              🛎️ Resepşn
+            </button>
+          </div>
+        </div>
 
       </div>
 

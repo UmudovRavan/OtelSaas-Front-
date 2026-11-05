@@ -97,7 +97,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<UserRole> => {
     try {
       const data = await authService.login({ email, password });
-      const role = ((data.roles && data.roles[0]) as UserRole) || 'Receptionist';
+      const rawRole = (data.roles && data.roles[0]) || 'Receptionist';
+      const role: UserRole = rawRole === 'HotelStaff' ? 'Receptionist' : (rawRole as UserRole);
+
+      if (data.refreshToken) {
+        localStorage.setItem('otelsaas_refresh_token', data.refreshToken);
+      }
+
       loginWithToken(data.accessToken, {
         fullName: data.fullName,
         tenantId: data.tenantId,
@@ -123,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('otelsaas_token');
     localStorage.removeItem('otelsaas_user');
+    localStorage.removeItem('otelsaas_refresh_token');
     localStorage.removeItem('token');
   };
 

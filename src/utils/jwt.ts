@@ -31,10 +31,13 @@ export function parseJwt(token: string): DecodedTokenPayload | null {
     const parsed = JSON.parse(jsonPayload);
 
     // .NET Identity claim type or standard claim
-    const role =
+    const rawRole =
       parsed.role ||
       parsed['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
       'Receptionist';
+
+    // Map backend 'HotelStaff' to frontend 'Receptionist'
+    const role: UserRole = rawRole === 'HotelStaff' ? 'Receptionist' : (rawRole as UserRole);
 
     return {
       email: parsed.email || parsed['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '',

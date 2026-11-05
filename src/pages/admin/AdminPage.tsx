@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { IOSIcon } from '../../components/common/IOSIcon';
+import { Menu } from 'lucide-react';
 import {
   hotelAdminService,
   AdminCategory,
@@ -11,7 +12,13 @@ import {
   resolveBackendMediaUrl,
 } from '../../services/api/hotelAdminService';
 import { publicService } from '../../services/api/publicService';
+import { API_BASE_URL } from '../../services/api/client';
 import { fetchHotelQrSvg, downloadHotelQr, printQrTableStand } from '../../utils/qrIntegration';
+import { AdminSidebar, AdminTab, CatalogSubTab } from './components/AdminSidebar';
+import { CatalogManagementTab } from './components/CatalogManagementTab';
+import { StoriesManagementTab } from './components/StoriesManagementTab';
+import { DepartmentsTab } from './components/DepartmentsTab';
+import { NotificationsTab } from './components/NotificationsTab';
 
 const DEFAULT_COVER =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
@@ -28,7 +35,10 @@ export const AdminPage: React.FC = () => {
 
   // Settings & Theme
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'branding' | 'menu' | 'activities' | 'qr'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [catalogSubTab, setCatalogSubTab] = useState<CatalogSubTab>('hubs');
+  const [catalogCounts, setCatalogCounts] = useState<{ hubs?: number; categories?: number; items?: number }>({});
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Hotel Profile State (Matched with HotelProfileDto & UpdateHotelProfileDto)
   const [hotelSlug, setHotelSlug] = useState(querySlug || user?.tenantSlug || 'hotel-resort');
@@ -65,40 +75,8 @@ export const AdminPage: React.FC = () => {
   const [qrSvgMarkup, setQrSvgMarkup] = useState<string>('');
   const [isQrLoading, setIsQrLoading] = useState<boolean>(false);
 
-  // Categories, Links & Activities from Backend
-  const [categories, setCategories] = useState<AdminCategory[]>([]);
+  // Legacy links fallback for analytics summary
   const [links, setLinks] = useState<AdminLink[]>([]);
-  const [activities, setActivities] = useState<AdminActivity[]>([]);
-
-  // New Category Modal
-  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
-  const [newCatTitleAz, setNewCatTitleAz] = useState('');
-  const [newCatTitleEn, setNewCatTitleEn] = useState('');
-  const [newCatTitleRu, setNewCatTitleRu] = useState('');
-  const [newCatLayout, setNewCatLayout] = useState<'list' | 'icons'>('list');
-
-  // New Link Modal
-  const [isNewLinkOpen, setIsNewLinkOpen] = useState(false);
-  const [newLinkCatId, setNewLinkCatId] = useState('');
-  const [newLinkTitleAz, setNewLinkTitleAz] = useState('');
-  const [newLinkTitleEn, setNewLinkTitleEn] = useState('');
-  const [newLinkTitleRu, setNewLinkTitleRu] = useState('');
-  const [newLinkType, setNewLinkType] = useState<number>(1);
-  const [newLinkIcon, setNewLinkIcon] = useState('Restaurant');
-  const [newLinkUrl, setNewLinkUrl] = useState('');
-  const [newLinkFile, setNewLinkFile] = useState<File | null>(null);
-  const [isSavingLink, setIsSavingLink] = useState(false);
-
-  // New Activity Modal
-  const [isNewActivityOpen, setIsNewActivityOpen] = useState(false);
-  const [newActTitleAz, setNewActTitleAz] = useState('');
-  const [newActTitleEn, setNewActTitleEn] = useState('');
-  const [newActDesc, setNewActDesc] = useState('');
-  const [newActLoc, setNewActLoc] = useState('');
-  const [newActStart, setNewActStart] = useState('16:00');
-  const [newActEnd, setNewActEnd] = useState('18:30');
-  const [newActCategory, setNewActCategory] = useState('Əyləncə');
-  const [isSavingActivity, setIsSavingActivity] = useState(false);
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -151,7 +129,6 @@ export const AdminPage: React.FC = () => {
     try {
       const cats = await hotelAdminService.getCategories(queryTenantId);
       if (cats && Array.isArray(cats)) {
-        setCategories(cats);
         const flatLinks: AdminLink[] = [];
         cats.forEach((c) => {
           if (c.links && Array.isArray(c.links)) {
@@ -159,21 +136,9 @@ export const AdminPage: React.FC = () => {
           }
         });
         setLinks(flatLinks);
-        if (cats.length > 0 && !newLinkCatId) {
-          setNewLinkCatId(cats[0].id);
-        }
       }
     } catch (e) {
-      console.warn('Could not fetch categories:', e);
-    }
-
-    try {
-      const acts = await hotelAdminService.getActivities(queryTenantId);
-      if (acts && Array.isArray(acts)) {
-        setActivities(acts);
-      }
-    } catch (e) {
-      console.warn('Could not fetch activities:', e);
+      console.warn('Could not fetch categories/links:', e);
     }
 
     try {
@@ -291,201 +256,6 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // Handle Create Category
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCatTitleAz.trim()) return;
-    try {
-      const created = await hotelAdminService.createCategory(
-        {
-          titleAz: newCatTitleAz.trim(),
-          titleEn: newCatTitleEn.trim() || newCatTitleAz.trim(),
-          titleRu: newCatTitleRu.trim() || newCatTitleAz.trim(),
-          layoutType: newCatLayout,
-          displayOrder: categories.length + 1,
-          isActive: true,
-        },
-        queryTenantId
-      );
-      await fetchAllAdminData();
-      if (created?.id) setNewLinkCatId(created.id);
-      setNewCatTitleAz('');
-      setNewCatTitleEn('');
-      setNewCatTitleRu('');
-      setIsNewCategoryOpen(false);
-      showToast('Yeni bölmə (kateqoriya) yaradıldı.');
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Kateqoriya yaradılarkən xəta baş verdi.', 'error');
-    }
-  };
-
-  const handleDeleteCategory = async (id: string) => {
-    try {
-      await hotelAdminService.deleteCategory(id, queryTenantId);
-      await fetchAllAdminData();
-      showToast('Kateqoriya silindi.');
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Kateqoriya silinərkən xəta baş verdi.', 'error');
-    }
-  };
-
-  // Handle Create Link (+ optional PDF/file upload)
-  const handleCreateLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newLinkTitleAz.trim()) return;
-
-    let targetCategoryId = newLinkCatId;
-    setIsSavingLink(true);
-    try {
-      // If hotel has no categories yet, create a default one automatically
-      if (!targetCategoryId) {
-        const defaultCat = await hotelAdminService.createCategory(
-          {
-            titleAz: 'Otel Xidmətləri & Menyular',
-            titleEn: 'Hotel Services & Menus',
-            titleRu: 'Услуги отеля и меню',
-            layoutType: 'list',
-            displayOrder: 1,
-            isActive: true,
-          },
-          queryTenantId
-        );
-        targetCategoryId = defaultCat.id;
-      }
-
-      const createdLink = await hotelAdminService.createLink(
-        {
-          categoryId: targetCategoryId,
-          titleAz: newLinkTitleAz.trim(),
-          titleEn: newLinkTitleEn.trim() || newLinkTitleAz.trim(),
-          titleRu: newLinkTitleRu.trim() || newLinkTitleAz.trim(),
-          linkType: newLinkFile ? 6 : newLinkType,
-          targetUrl: newLinkUrl.trim() || 'https://hotelresort.az',
-          iconKey: newLinkIcon,
-          isCustomIcon: false,
-          openInNewTab: true,
-          displayOrder: links.length + 1,
-          isActive: true,
-        },
-        queryTenantId
-      );
-
-      if (newLinkFile && createdLink?.id) {
-        await hotelAdminService.uploadLinkFile(createdLink.id, newLinkFile, queryTenantId);
-      }
-
-      await fetchAllAdminData();
-      setNewLinkTitleAz('');
-      setNewLinkTitleEn('');
-      setNewLinkTitleRu('');
-      setNewLinkUrl('');
-      setNewLinkFile(null);
-      setIsNewLinkOpen(false);
-      showToast('Yeni menyu keçidi əlavə edildi!');
-    } catch (err: any) {
-      const apiData = err?.response?.data;
-      let msg = apiData?.message || 'Keçid əlavə edilərkən xəta baş verdi.';
-      if (apiData?.errors) {
-        const list = Object.values(apiData.errors).flat().join(' ');
-        if (list) msg = list;
-      }
-      showToast(msg, 'error');
-    } finally {
-      setIsSavingLink(false);
-    }
-  };
-
-  const toggleLinkActive = async (link: AdminLink) => {
-    try {
-      await hotelAdminService.updateLink(
-        link.id,
-        {
-          titleAz: link.titleAz,
-          titleEn: link.titleEn || link.titleAz,
-          titleRu: link.titleRu || link.titleAz,
-          linkType: link.linkType || 1,
-          targetUrl: link.targetUrl || 'https://hotelresort.az',
-          iconKey: link.iconKey || 'Globe',
-          isCustomIcon: link.isCustomIcon || false,
-          openInNewTab: link.openInNewTab ?? true,
-          displayOrder: link.displayOrder || 1,
-          isActive: !link.isActive,
-        },
-        queryTenantId
-      );
-      await fetchAllAdminData();
-      showToast('Keçid statusu yeniləndi.');
-    } catch (err: any) {
-      showToast('Status yenilənərkən xəta baş verdi.', 'error');
-    }
-  };
-
-  const deleteLink = async (id: string) => {
-    try {
-      await hotelAdminService.deleteLink(id, queryTenantId);
-      await fetchAllAdminData();
-      showToast('Keçid silindi.');
-    } catch (err: any) {
-      showToast('Keçid silinərkən xəta baş verdi.', 'error');
-    }
-  };
-
-  // Handle Create Activity
-  const handleCreateActivity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newActTitleAz.trim()) return;
-    setIsSavingActivity(true);
-    try {
-      await hotelAdminService.createActivity(
-        {
-          titleAz: newActTitleAz.trim(),
-          titleEn: newActTitleEn.trim() || newActTitleAz.trim(),
-          titleRu: newActTitleAz.trim(),
-          description: newActDesc.trim() || null,
-          location: newActLoc.trim() || 'Əsas Otel Ərazisi',
-          startTime: newActStart,
-          endTime: newActEnd || null,
-          date: new Date().toISOString(),
-          category: newActCategory,
-          imageUrl: null,
-          displayOrder: activities.length + 1,
-        },
-        queryTenantId
-      );
-      await fetchAllAdminData();
-      setNewActTitleAz('');
-      setNewActTitleEn('');
-      setNewActDesc('');
-      setNewActLoc('');
-      setIsNewActivityOpen(false);
-      showToast('Yeni fəaliyyət proqrama əlavə edildi!');
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Fəaliyyət yaradılarkən xəta baş verdi.', 'error');
-    } finally {
-      setIsSavingActivity(false);
-    }
-  };
-
-  const toggleActivityActive = async (id: string) => {
-    try {
-      await hotelAdminService.toggleActivity(id, queryTenantId);
-      await fetchAllAdminData();
-      showToast('Fəaliyyət statusu yeniləndi.');
-    } catch (err) {
-      showToast('Status dəyişdirilə bilmədi.', 'error');
-    }
-  };
-
-  const deleteActivity = async (id: string) => {
-    try {
-      await hotelAdminService.deleteActivity(id, queryTenantId);
-      await fetchAllAdminData();
-      showToast('Fəaliyyət silindi.');
-    } catch (err) {
-      showToast('Fəaliyyət silinərkən xəta baş verdi.', 'error');
-    }
-  };
-
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -496,145 +266,104 @@ export const AdminPage: React.FC = () => {
     : '/reception';
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-200 selection:bg-[#A78BFA] selection:text-black">
-      {/* ===================== TOP HEADER ===================== */}
-      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--border-color)] px-4 md:px-8 py-3.5 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
-          {/* Brand Identity */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[20px] bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
-              {logoImage ? (
-                <img src={logoImage} alt={hotelName} className="w-full h-full object-cover" />
-              ) : (
-                <IOSIcon name="Sparkles" size={20} />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-[var(--text-main)] tracking-tight leading-tight">
-                  Otel Admin Paneli
-                </h1>
-                <span className="text-[10px] bg-[#A78BFA]/15 text-[#A78BFA] border border-[#A78BFA]/20 px-2.5 py-0.5 rounded-full font-semibold">
-                  {user?.role === 'SuperAdmin' ? 'SuperAdmin Rejimi' : 'HotelAdmin'}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]/80 font-normal">
-                {hotelName} <span className="font-mono text-[#A78BFA]">(/hotel/{hotelSlug})</span>
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-200 selection:bg-[#A78BFA] selection:text-black flex">
+      {/* ===================== SOL SIDEBAR ===================== */}
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        activeCatalogSubTab={catalogSubTab}
+        setActiveCatalogSubTab={setCatalogSubTab}
+        hotelName={hotelName}
+        hotelSlug={hotelSlug}
+        logoImage={logoImage}
+        receptionUrl={receptionUrl}
+        userRole={user?.role}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        onLogout={handleLogout}
+        isMobileOpen={isMobileSidebarOpen}
+        setIsMobileOpen={setIsMobileSidebarOpen}
+        counts={catalogCounts}
+      />
 
-          {/* Action Controls & Navigation */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {user?.role === 'SuperAdmin' && (
+      {/* ===================== SAĞ ƏSAS MƏZMUN SAHƏSİ ===================== */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* ===================== TOP NAVBAR ===================== */}
+        <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--border-color)] px-4 lg:px-8 py-3.5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            {/* Sol Hissə: Mobil Menyu Düyməsi və Dinamik Başlıq/Breadcrumb */}
+            <div className="flex items-center gap-3 min-w-0">
               <button
-                onClick={() => navigate('/super-admin')}
-                className="px-3.5 py-1.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-semibold hover:border-[#A78BFA] transition-colors"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] hover:border-[#A78BFA] transition-colors shrink-0"
+                aria-label="Menyunu aç"
               >
-                ← SuperAdmin-ə Qayıt
+                <Menu size={18} />
               </button>
-            )}
 
-            <button
-              onClick={() => navigate(receptionUrl)}
-              className="px-3.5 py-1.5 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
-            >
-              <IOSIcon name="Bell" size={14} />
-              <span>🛎️ Resepşn Masasına Bax</span>
-            </button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-sm md:text-base font-bold text-[var(--text-main)] tracking-tight">
+                    {activeTab === 'overview' && 'İcmal & Analitika'}
+                    {activeTab === 'catalog' && (
+                      <span className="flex items-center gap-1.5 flex-wrap">
+                        <span>Kataloq & Hublar</span>
+                        <span className="text-[var(--text-muted)] font-normal text-xs">/</span>
+                        <span className="text-[#A78BFA] font-semibold text-xs">
+                          {catalogSubTab === 'hubs' && '🏨 Əsas Bölmələr (Hubs)'}
+                          {catalogSubTab === 'categories' && '🍽️ Məkanlar & Kateqoriyalar'}
+                          {catalogSubTab === 'items' && '🏷️ Məhsullar & Qiymətlər'}
+                        </span>
+                      </span>
+                    )}
+                    {activeTab === 'stories' && 'Story-lər İdarəetməsi'}
+                    {activeTab === 'departments' && 'Şöbə Əlaqələri & Nömrələr'}
+                    {activeTab === 'notifications' && 'Bildirişlər & Bot'}
+                    {activeTab === 'branding' && 'Brendinq & Profil Parametrləri'}
+                    {activeTab === 'qr' && 'Dinamik QR Kod & Stolüstü Stendlər'}
+                  </h1>
 
-            <a
-              href={`/hotel/${hotelSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-semibold transition-colors flex items-center gap-1"
-            >
-              <span>Qonaq Portalı ↗</span>
-            </a>
+                  <span className="hidden sm:inline-block text-[10px] bg-[#A78BFA]/15 text-[#A78BFA] border border-[#A78BFA]/20 px-2 py-0.5 rounded-full font-semibold">
+                    {user?.role === 'SuperAdmin' ? 'SuperAdmin' : 'HotelAdmin'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)] truncate hidden sm:block mt-0.5">
+                  {hotelName} <span className="font-mono text-[#A78BFA]">(/hotel/{hotelSlug})</span>
+                </p>
+              </div>
+            </div>
 
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
-              className="w-9 h-9 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[#A78BFA] active:scale-95 transition-transform"
-            >
-              {isDarkMode ? <IOSIcon name="Sun" size={16} /> : <IOSIcon name="Moon" size={15} />}
-            </button>
+            {/* Sağ Hissə: Əməliyyat Nəzarətləri */}
+            <div className="flex items-center gap-2 shrink-0">
+              {user?.role === 'SuperAdmin' && (
+                <button
+                  onClick={() => navigate('/super-admin')}
+                  className="px-3 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-semibold hover:border-[#A78BFA] transition-colors"
+                >
+                  ← SuperAdmin
+                </button>
+              )}
 
-            <button
-              onClick={handleLogout}
-              className="px-3.5 py-1.5 rounded-2xl bg-rose-500/15 border border-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500 hover:text-white transition-colors"
-            >
-              Çıxış
-            </button>
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                className="w-8 h-8 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[#A78BFA] active:scale-95 transition-transform"
+              >
+                {isDarkMode ? <IOSIcon name="Sun" size={15} /> : <IOSIcon name="Moon" size={14} />}
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500 hover:text-white transition-colors"
+              >
+                Çıxış
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* ===================== MAIN CONTENT WRAPPER ===================== */}
-      <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
-        {/* Soft Navigation Tabs (iOS Segmented Pills) */}
-        <div className="bg-[var(--bg-card)] p-1.5 rounded-[24px] border border-[var(--border-color)] flex gap-1.5 overflow-x-auto shadow-sm">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 text-xs font-semibold rounded-2xl transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === 'overview'
-                ? 'bg-[#A78BFA] text-black shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            <IOSIcon name="Sparkles" size={15} />
-            <span>İcmal & Analitika</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('branding')}
-            className={`px-4 py-2 text-xs font-semibold rounded-2xl transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === 'branding'
-                ? 'bg-[#A78BFA] text-black shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            <IOSIcon name="Sparkle" size={15} />
-            <span>Brendinq & Şəkillər</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('menu')}
-            className={`px-4 py-2 text-xs font-semibold rounded-2xl transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === 'menu'
-                ? 'bg-[#A78BFA] text-black shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            <IOSIcon name="Restaurant" size={15} />
-            <span>Menyu & Linklər ({links.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('activities')}
-            className={`px-4 py-2 text-xs font-semibold rounded-2xl transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === 'activities'
-                ? 'bg-[#A78BFA] text-black shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            <IOSIcon name="Calendar" size={15} />
-            <span>Gündəlik Tədbirlər ({activities.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('qr')}
-            className={`px-4 py-2 text-xs font-semibold rounded-2xl transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === 'qr'
-                ? 'bg-[#A78BFA] text-black shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            <IOSIcon name="Share" size={15} />
-            <span>Dinamik QR Kod</span>
-          </button>
-        </div>
-
+        {/* ===================== MAIN CONTENT WRAPPER ===================== */}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 space-y-6">
         {/* ================= TAB 1: OVERVIEW & ANALYTICS ================= */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -945,209 +674,11 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
 
-        {/* ================= TAB 3: MENU, CATEGORIES & LINKS ================= */}
-        {activeTab === 'menu' && (
-          <div className="space-y-6">
-            {/* Categories Section */}
-            <div className="p-6 rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-[var(--text-main)] tracking-tight">
-                    Menyu Kateqoriyaları ({categories.length})
-                  </h2>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    Xidmət və menyu keçidlərinin qruplaşdırıldığı bölmələr.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setIsNewCategoryOpen(true)}
-                  className="px-4 py-2 rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] hover:border-[#A78BFA] text-[var(--text-main)] text-xs font-bold transition-colors"
-                >
-                  + Yeni Kateqoriya
-                </button>
-              </div>
-
-              {categories.length > 0 && (
-                <div className="flex flex-wrap gap-2.5">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="px-3.5 py-2 rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center gap-2.5 text-xs"
-                    >
-                      <span className="font-bold text-[var(--text-main)]">{cat.titleAz}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#A78BFA]/15 text-[#A78BFA]">
-                        {cat.links?.length || 0} link
-                      </span>
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="text-[var(--text-muted)] hover:text-rose-400 ml-1"
-                        title="Kateqoriyanı sil"
-                      >
-                        <IOSIcon name="Close" size={13} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Links Section */}
-            <div className="p-6 rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-[var(--text-main)] tracking-tight">
-                    Menyu və Xidmət Keçidləri ({links.length})
-                  </h2>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    Qonaqların ana səhifədə gördüyü xidmət kartlarını, PDF menyuları və sosial şəbəkə linklərini tənzimləyin.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setIsNewLinkOpen(true)}
-                  className="px-4 py-2 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold active:scale-95 transition-transform shadow-sm"
-                >
-                  + Yeni Keçid Əlavə Et
-                </button>
-              </div>
-
-              {links.length === 0 ? (
-                <div className="p-8 rounded-[20px] border border-[var(--border-color)] text-center text-xs text-[var(--text-muted)]">
-                  Hələ heç bir menyu keçidi əlavə edilməyib. "+ Yeni Keçid Əlavə Et" düyməsini sıxın.
-                </div>
-              ) : (
-                <div className="divide-y divide-[var(--border-color)] rounded-[20px] border border-[var(--border-color)] overflow-hidden">
-                  {links.map((link) => (
-                    <div
-                      key={link.id}
-                      className="p-4 flex items-center justify-between flex-wrap gap-3 bg-[var(--bg-subcard)]/40 hover:bg-[var(--bg-subcard)] transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-2xl bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center flex-shrink-0">
-                          <IOSIcon name={link.iconKey || 'Globe'} size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-xs font-bold text-[var(--text-main)]">{link.titleAz}</h4>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#A78BFA]/15 text-[#A78BFA]">
-                              {link.clickCount || 0} klik
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-[var(--text-muted)] truncate max-w-md mt-0.5 font-mono">
-                            {link.filePath ? resolveBackendMediaUrl(link.filePath) : link.targetUrl}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleLinkActive(link)}
-                          className={`px-3 py-1 text-[11px] font-semibold rounded-xl border transition-all ${
-                            link.isActive
-                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
-                              : 'bg-rose-500/15 text-rose-400 border-rose-500/25'
-                          }`}
-                        >
-                          {link.isActive ? 'Aktiv' : 'Deaktiv'}
-                        </button>
-
-                        <button
-                          onClick={() => deleteLink(link.id)}
-                          className="px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] hover:text-rose-400"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ================= TAB 4: ACTIVITIES ================= */}
-        {activeTab === 'activities' && (
-          <div className="space-y-6">
-            <div className="p-6 rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-[var(--text-main)] tracking-tight">
-                    Gündəlik Fəaliyyət & Əyləncə Cədvəli ({activities.length})
-                  </h2>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    Hovuz partisi, canlı caz, yoqa və uşaq oyunları proqramını idarə edin.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setIsNewActivityOpen(true)}
-                  className="px-4 py-2 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold active:scale-95 transition-transform shadow-sm"
-                >
-                  + Yeni Fəaliyyət Əlavə Et
-                </button>
-              </div>
-
-              {activities.length === 0 ? (
-                <div className="p-8 rounded-[20px] border border-[var(--border-color)] text-center text-xs text-[var(--text-muted)]">
-                  Hələ heç bir gündəlik fəaliyyət əlavə edilməyib.
-                </div>
-              ) : (
-                <div className="divide-y divide-[var(--border-color)] rounded-[20px] border border-[var(--border-color)] overflow-hidden">
-                  {activities.map((act) => (
-                    <div
-                      key={act.id}
-                      className="p-4 flex items-center justify-between flex-wrap gap-3 bg-[var(--bg-subcard)]/40 hover:bg-[var(--bg-subcard)] transition-colors"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#A78BFA]/20 text-[#A78BFA] uppercase">
-                            {act.category || 'Tədbir'}
-                          </span>
-                          <h4 className="text-xs font-bold text-[var(--text-main)]">{act.titleAz}</h4>
-                        </div>
-                        <div className="flex items-center gap-3 text-[11px] text-[var(--text-muted)]">
-                          <span>
-                            ⏰ {act.startTime}
-                            {act.endTime ? ` - ${act.endTime}` : ''}
-                          </span>
-                          {act.location && <span>📍 {act.location}</span>}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleActivityActive(act.id)}
-                          className={`px-3 py-1 text-[11px] font-semibold rounded-xl border transition-all ${
-                            act.isActive
-                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
-                              : 'bg-rose-500/15 text-rose-400 border-rose-500/25'
-                          }`}
-                        >
-                          {act.isActive ? 'Aktiv' : 'Deaktiv'}
-                        </button>
-
-                        <button
-                          onClick={() => deleteActivity(act.id)}
-                          className="px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] hover:text-rose-400"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ================= TAB 5: DYNAMIC QR CODE ================= */}
+        {/* ================= TAB: DYNAMIC QR CODE ================= */}
         {activeTab === 'qr' &&
           (() => {
             const qrSvgUrl = publicService.getQrSvgUrl(hotelSlug);
-            const dynamicScanUrl = `http://31.57.77.199:5055/q/${hotelSlug}`;
+            const dynamicScanUrl = `${API_BASE_URL}/q/${hotelSlug}`;
             const directPortalUrl = `${window.location.origin}/hotel/${hotelSlug}`;
 
             const handleDownloadQr = async (format: 'png' | 'svg') => {
@@ -1295,282 +826,43 @@ export const AdminPage: React.FC = () => {
               </div>
             );
           })()}
+
+        {/* ================= TAB: MODERN CATALOG (HUBS, CATEGORIES, ITEMS) ================= */}
+        {activeTab === 'catalog' && (
+          <CatalogManagementTab
+            tenantId={queryTenantId || user?.tenantId || undefined}
+            showToast={showToast}
+            activeSubTab={catalogSubTab}
+            onSubTabChange={(sub) => setCatalogSubTab(sub)}
+            onCountsLoaded={(counts) => setCatalogCounts(counts)}
+          />
+        )}
+
+        {/* ================= TAB: STORIES MANAGEMENT ================= */}
+        {activeTab === 'stories' && (
+          <StoriesManagementTab
+            tenantId={queryTenantId || user?.tenantId || undefined}
+            showToast={showToast}
+          />
+        )}
+
+        {/* ================= TAB: DEPARTMENTS MANAGEMENT ================= */}
+        {activeTab === 'departments' && (
+          <DepartmentsTab
+            tenantId={queryTenantId || user?.tenantId || undefined}
+            showToast={showToast}
+          />
+        )}
+
+        {/* ================= TAB: NOTIFICATIONS & TELEGRAM BOT ================= */}
+        {activeTab === 'notifications' && (
+          <NotificationsTab
+            tenantId={queryTenantId || user?.tenantId || undefined}
+            showToast={showToast}
+          />
+        )}
       </main>
-
-      {/* ===================== MODAL: CREATE CATEGORY ===================== */}
-      {isNewCategoryOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="absolute inset-0" onClick={() => setIsNewCategoryOpen(false)} />
-          <div className="relative w-full max-w-md rounded-[32px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 shadow-2xl z-10 animate-slide-up text-[var(--text-main)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-[var(--text-main)]">Yeni Menyu Kateqoriyası</h3>
-              <button
-                onClick={() => setIsNewCategoryOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
-              >
-                <IOSIcon name="Close" size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateCategory} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1">Kateqoriya Adı (AZ) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Məs: Restoran & Otaq Sifarişi"
-                  value={newCatTitleAz}
-                  onChange={(e) => setNewCatTitleAz(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Kateqoriya Adı (EN)</label>
-                <input
-                  type="text"
-                  placeholder="Dining & Room Service"
-                  value={newCatTitleEn}
-                  onChange={(e) => setNewCatTitleEn(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Görünüş Növü</label>
-                <select
-                  value={newCatLayout}
-                  onChange={(e) => setNewCatLayout(e.target.value as 'list' | 'icons')}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                >
-                  <option value="list">Siyahı (List kartlar)</option>
-                  <option value="icons">İkon Şəbəkəsi (Icons)</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold active:scale-[0.98] transition-transform mt-2"
-              >
-                Kateqoriyanı Yarat
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===================== MODAL: CREATE ACTIVITY ===================== */}
-      {isNewActivityOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="absolute inset-0" onClick={() => setIsNewActivityOpen(false)} />
-          <div className="relative w-full max-w-md rounded-[32px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 shadow-2xl z-10 animate-slide-up text-[var(--text-main)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-[var(--text-main)]">Yeni Fəaliyyət Əlavə Et</h3>
-              <button
-                onClick={() => setIsNewActivityOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
-              >
-                <IOSIcon name="Close" size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateActivity} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1">Tədbirin Adı (AZ) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Məs: Canlı Saxofon Gecəsi"
-                  value={newActTitleAz}
-                  onChange={(e) => setNewActTitleAz(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Tədbirin Adı (EN)</label>
-                <input
-                  type="text"
-                  placeholder="Live Saxophone Night"
-                  value={newActTitleEn}
-                  onChange={(e) => setNewActTitleEn(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Məkan</label>
-                <input
-                  type="text"
-                  placeholder="Məs: Panorama Lounge Bar"
-                  value={newActLoc}
-                  onChange={(e) => setNewActLoc(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Başlama Saatı</label>
-                  <input
-                    type="text"
-                    value={newActStart}
-                    onChange={(e) => setNewActStart(e.target.value)}
-                    className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Bitmə Saatı</label>
-                  <input
-                    type="text"
-                    value={newActEnd}
-                    onChange={(e) => setNewActEnd(e.target.value)}
-                    className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Kateqoriya</label>
-                <select
-                  value={newActCategory}
-                  onChange={(e) => setNewActCategory(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                >
-                  <option value="Əyləncə">🏊 Əyləncə & Hovuz</option>
-                  <option value="Musiqi">🎷 Canlı Musiqi</option>
-                  <option value="Ailə">👨‍👩‍👧 Uşaq & Ailə</option>
-                  <option value="İdman">🧘 Yoqa & İdman</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSavingActivity}
-                className="w-full py-3 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold active:scale-[0.98] transition-transform mt-2 disabled:opacity-50"
-              >
-                {isSavingActivity ? 'Əlavə edilir...' : 'Fəaliyyəti Qeyd Et'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===================== MODAL: CREATE LINK ===================== */}
-      {isNewLinkOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-          <div className="absolute inset-0" onClick={() => setIsNewLinkOpen(false)} />
-          <div className="relative w-full max-w-md rounded-[32px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 shadow-2xl z-10 animate-slide-up text-[var(--text-main)] my-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-[var(--text-main)]">Yeni Keçid / Menyu Əlavə Et</h3>
-              <button
-                onClick={() => setIsNewLinkOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
-              >
-                <IOSIcon name="Close" size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateLink} className="space-y-3">
-              {categories.length > 0 && (
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Aid Olduğu Bölmə *</label>
-                  <select
-                    value={newLinkCatId}
-                    onChange={(e) => setNewLinkCatId(e.target.value)}
-                    className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.titleAz}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Keçidin Başlığı (AZ) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Məs: Şam Yeməyi Xüsusi Menyusu"
-                  value={newLinkTitleAz}
-                  onChange={(e) => setNewLinkTitleAz(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Keçidin Başlığı (EN)</label>
-                <input
-                  type="text"
-                  placeholder="Dinner Special Menu"
-                  value={newLinkTitleEn}
-                  onChange={(e) => setNewLinkTitleEn(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">İkon Növü</label>
-                <select
-                  value={newLinkIcon}
-                  onChange={(e) => setNewLinkIcon(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                >
-                  <option value="Restaurant">🍽️ Restoran / Çəngəl Bıçaq</option>
-                  <option value="Wine">🍷 Bar & Şərab</option>
-                  <option value="Sparkles">✨ Spa & Masaj</option>
-                  <option value="Water">🏊 Hovuz & Dəniz</option>
-                  <option value="Bed">🛏️ Otaq & Xidmət</option>
-                  <option value="Car">🚗 Nəqliyyat & Tur</option>
-                  <option value="Wifi">📶 Wi-Fi</option>
-                  <option value="Globe">🌐 Rəsmi Vebsayt</option>
-                  <option value="Booking">🏨 Booking.com</option>
-                  <option value="TripAdvisor">🦉 TripAdvisor</option>
-                  <option value="GoogleMaps">📍 Google Maps & Rəylər</option>
-                  <option value="Airbnb">🏡 Airbnb</option>
-                  <option value="Instagram">📸 Instagram</option>
-                  <option value="TikTok">🎵 TikTok</option>
-                  <option value="Facebook">👥 Facebook</option>
-                  <option value="YouTube">▶️ YouTube</option>
-                  <option value="Telegram">✈️ Telegram</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Hədəf Keçid (URL)</label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={newLinkUrl}
-                  onChange={(e) => setNewLinkUrl(e.target.value)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-3 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Və ya PDF Menyu / Fayl Yüklə</label>
-                <input
-                  type="file"
-                  accept=".pdf,image/*"
-                  onChange={(e) => setNewLinkFile(e.target.files?.[0] || null)}
-                  className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] p-2.5 text-xs outline-none focus:border-[#A78BFA]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSavingLink}
-                className="w-full py-3 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold active:scale-[0.98] transition-transform mt-2 disabled:opacity-50"
-              >
-                {isSavingLink ? 'Saxlanılır...' : 'Keçidi Serverdə Saxla'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* ===================== NOTIFICATION TOAST ===================== */}
       {toastMessage && (

@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: dark;
   /* Dark Mode (Default) */
   --bg-main: #12101C;
   --bg-card: #211E30;
@@ -17,6 +18,7 @@
 }
 
 .light {
+  color-scheme: light;
   /* Light Mode - Premium iOS */
   --bg-main: #F4F2FA;
   --bg-card: #FFFFFF;
@@ -28,6 +30,25 @@
   --border-color: rgba(0, 0, 0, 0.07);
   --header-bg: rgba(244, 242, 250, 0.92);
   --overlay-bg: rgba(20, 17, 34, 0.65);
+}
+
+/* Form selects & option dropdowns styling */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #211E30 !important;
+  color: #FFFFFF !important;
+}
+
+.light select {
+  color-scheme: light;
+}
+
+.light select option {
+  background-color: #FFFFFF !important;
+  color: #141122 !important;
 }
 
 * {
@@ -48,12 +69,28 @@ html, body {
 }
 
 /* iOS Hide Scrollbar */
-.hide-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
-.hide-scrollbar {
+.hide-scrollbar,
+.no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.font-hotel-serif {
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-feature-settings: "lnum";
+  font-variant-numeric: lining-nums;
+}
+
+.font-hotel-sans {
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", system-ui, sans-serif;
+  font-feature-settings: "lnum";
+  font-variant-numeric: lining-nums;
 }
 
 /* Animations */
