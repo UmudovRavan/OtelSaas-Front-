@@ -84,6 +84,39 @@ export const GuestPortalPage: React.FC = () => {
   const displayPhone = liveHotel?.phone || hotel.phone;
   const displayWhatsapp = (liveHotel?.whatsApp || hotel.whatsapp).replace(/[^0-9]/g, '');
 
+  const resolveSmartIconName = (iconKey?: string, title?: string): string => {
+    const rawKey = (iconKey || '').trim().toLowerCase();
+    const rawTitle = (title || '').trim().toLowerCase();
+    if (rawKey === 'menu') {
+      if (rawTitle.includes('bar') || rawTitle.includes('drink') || rawTitle.includes('wine') || rawTitle.includes('içki')) {
+        return 'Wine';
+      }
+      if (rawTitle.includes('food') || rawTitle.includes('yemək') || rawTitle.includes('restoran') || rawTitle.includes('dining')) {
+        return 'Restaurant';
+      }
+      return 'Menu';
+    }
+    if (rawKey) return rawKey;
+    if (rawTitle.includes('restoran') || rawTitle.includes('food') || rawTitle.includes('menyu')) return 'Restaurant';
+    if (rawTitle.includes('bar') || rawTitle.includes('wine')) return 'Wine';
+    if (rawTitle.includes('spa') || rawTitle.includes('wellness') || rawTitle.includes('masaj')) return 'Sparkles';
+    if (rawTitle.includes('hovuz') || rawTitle.includes('pool') || rawTitle.includes('beach')) return 'Water';
+    if (rawTitle.includes('otaq') || rawTitle.includes('room') || rawTitle.includes('bed')) return 'Bed';
+    if (rawTitle.includes('transfer') || rawTitle.includes('taksi') || rawTitle.includes('car')) return 'Car';
+    if (rawTitle.includes('mail') || rawTitle.includes('email')) return 'Mail';
+    if (rawTitle.includes('phone') || rawTitle.includes('zəng')) return 'Phone';
+    if (rawTitle.includes('whatsapp')) return 'Whatsapp';
+    if (rawTitle.includes('telegram')) return 'Telegram';
+    if (rawTitle.includes('instagram')) return 'Instagram';
+    if (rawTitle.includes('facebook')) return 'Facebook';
+    if (rawTitle.includes('youtube')) return 'YouTube';
+    if (rawTitle.includes('tiktok')) return 'TikTok';
+    if (rawTitle.includes('booking')) return 'Booking';
+    if (rawTitle.includes('tripadvisor')) return 'TripAdvisor';
+    if (rawTitle.includes('google') || rawTitle.includes('map')) return 'GoogleMaps';
+    return 'Sparkles';
+  };
+
   const displayCategories =
     liveHotel?.categories && liveHotel.categories.length > 0 && liveHotel.categories.some((c) => c.links && c.links.length > 0)
       ? liveHotel.categories
@@ -95,7 +128,7 @@ export const GuestPortalPage: React.FC = () => {
               id: l.id,
               title: l.title,
               subtitle: '',
-              iconName: l.iconKey || 'Sparkles',
+              iconName: resolveSmartIconName(l.iconKey, l.title),
               actionUrl: l.actionUrl ? resolveBackendMediaUrl(l.actionUrl) : '#',
             })),
           }))
@@ -252,6 +285,11 @@ export const GuestPortalPage: React.FC = () => {
             transition={{ duration: 0.9, ease: 'easeOut' }}
             src={displayCoverImage} 
             alt={displayHotelName}
+            onError={(e) => {
+              if (e.currentTarget.src !== hotel.coverImage) {
+                e.currentTarget.src = hotel.coverImage;
+              }
+            }}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/40 to-transparent" />
@@ -290,6 +328,11 @@ export const GuestPortalPage: React.FC = () => {
               <img 
                 src={displayLogo} 
                 alt="Logo" 
+                onError={(e) => {
+                  if (e.currentTarget.src !== hotel.logo) {
+                    e.currentTarget.src = hotel.logo;
+                  }
+                }}
                 className="w-full h-full object-cover"
               />
             </motion.div>

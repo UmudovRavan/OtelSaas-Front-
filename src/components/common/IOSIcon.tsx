@@ -1,6 +1,10 @@
 import React from 'react';
 import {
   IoCall,
+  IoMail,
+  IoBook,
+  IoCafe,
+  IoDocumentText,
   IoNotifications,
   IoWifi,
   IoLogoWhatsapp,
@@ -22,9 +26,8 @@ import {
   IoCopy,
   IoCalendar,
   IoShareSocial,
-  IoHelpCircle,
   IoGlobe,
-  IoStar
+  IoStar,
 } from 'react-icons/io5';
 
 import {
@@ -38,7 +41,7 @@ import {
   SiTelegram,
   SiAirbnb,
   SiTiktok,
-  SiTrivago
+  SiTrivago,
 } from 'react-icons/si';
 
 interface IOSIconProps {
@@ -48,105 +51,184 @@ interface IOSIconProps {
 }
 
 /**
- * Official iOS & Brand Icons Pack (Pure Apple iOS & Authentic Brand Standard)
+ * Official iOS & Brand Icons Pack (Case-insensitive, supports all backend & frontend icon keys,
+ * never renders a '?' question mark icon on any device)
  */
 export const IOSIcon: React.FC<IOSIconProps> = ({
   name,
-  className = "",
+  className = '',
   size = 20,
 }) => {
   const props = { size, className };
+  const key = (name || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
 
-  switch (name) {
+  switch (key) {
     // Official Brand Logos (from react-icons/si)
-    case 'Booking':
-    case 'Bookingdotcom':
+    case 'booking':
+    case 'bookingdotcom':
+    case 'bookingcom':
       return <SiBookingdotcom {...props} />;
-    case 'TripAdvisor':
-    case 'Tripadvisor':
+    case 'tripadvisor':
       return <SiTripadvisor {...props} />;
-    case 'Google':
-    case 'GoogleMaps':
+    case 'google':
+    case 'googlemaps':
+    case 'googlereview':
+    case 'maps':
       return <SiGooglemaps {...props} />;
-    case 'GoogleSearch':
+    case 'googlesearch':
       return <SiGoogle {...props} />;
-    case 'Instagram':
+    case 'instagram':
+    case 'insta':
       return <SiInstagram {...props} />;
-    case 'Facebook':
+    case 'facebook':
+    case 'fb':
       return <SiFacebook {...props} />;
-    case 'Youtube':
-    case 'YouTube':
+    case 'youtube':
+    case 'yt':
       return <SiYoutube {...props} />;
-    case 'Telegram':
+    case 'telegram':
+    case 'tg':
       return <SiTelegram {...props} />;
-    case 'Airbnb':
+    case 'airbnb':
       return <SiAirbnb {...props} />;
-    case 'Tiktok':
-    case 'TikTok':
+    case 'tiktok':
       return <SiTiktok {...props} />;
-    case 'Trivago':
+    case 'trivago':
       return <SiTrivago {...props} />;
 
     // Apple iOS SF / Ionicons Standard
-    case 'Phone':
+    case 'phone':
+    case 'call':
+    case 'tel':
+    case 'telephone':
       return <IoCall {...props} />;
-    case 'Bell':
-    case 'BellConcierge':
+    case 'mail':
+    case 'email':
+    case 'envelope':
+    case 'contact':
+      return <IoMail {...props} />;
+    case 'bell':
+    case 'bellconcierge':
+    case 'concierge':
+    case 'roomservice':
+    case 'notification':
       return <IoNotifications {...props} />;
-    case 'Wifi':
+    case 'wifi':
+    case 'internet':
       return <IoWifi {...props} />;
-    case 'MessageCircle':
-    case 'Whatsapp':
+    case 'messagecircle':
+    case 'whatsapp':
+    case 'wa':
+    case 'chat':
       return <IoLogoWhatsapp {...props} />;
-    case 'Globe':
-    case 'Website':
+    case 'globe':
+    case 'website':
+    case 'web':
+    case 'link':
+    case 'url':
       return <IoGlobe {...props} />;
-    case 'Star':
-    case 'Review':
+    case 'star':
+    case 'review':
+    case 'rating':
       return <IoStar {...props} />;
-    case 'Utensils':
-    case 'Restaurant':
+    case 'utensils':
+    case 'restaurant':
+    case 'food':
+    case 'dining':
+    case 'foodmenu':
+    case 'kitchen':
       return <IoRestaurant {...props} />;
-    case 'Wine':
+    case 'menu':
+    case 'book':
+    case 'flipbook':
+      return <IoBook {...props} />;
+    case 'pdf':
+    case 'file':
+    case 'document':
+      return <IoDocumentText {...props} />;
+    case 'wine':
+    case 'bar':
+    case 'barmenu':
+    case 'drink':
+    case 'drinks':
+    case 'cocktail':
+    case 'lounge':
       return <IoWine {...props} />;
-    case 'Sparkles':
-    case 'Sparkle':
+    case 'coffee':
+    case 'cafe':
+    case 'breakfast':
+      return <IoCafe {...props} />;
+    case 'sparkles':
+    case 'sparkle':
+    case 'spa':
+    case 'wellness':
+    case 'massage':
+    case 'housekeeping':
+    case 'clean':
       return <IoSparkles {...props} />;
-    case 'Waves':
-    case 'Water':
+    case 'waves':
+    case 'water':
+    case 'pool':
+    case 'beach':
+    case 'sea':
+    case 'swim':
       return <IoWater {...props} />;
-    case 'Dumbbell':
-    case 'Fitness':
+    case 'dumbbell':
+    case 'fitness':
+    case 'gym':
+    case 'sport':
+    case 'yoga':
       return <IoBarbell {...props} />;
-    case 'Bed':
+    case 'bed':
+    case 'room':
+    case 'rooms':
+    case 'hotel':
+    case 'suite':
       return <IoBed {...props} />;
-    case 'Shirt':
-    case 'Laundry':
+    case 'shirt':
+    case 'laundry':
+    case 'drycleaning':
       return <IoShirt {...props} />;
-    case 'Car':
+    case 'car':
+    case 'taxi':
+    case 'transfer':
+    case 'transport':
+    case 'tour':
       return <IoCar {...props} />;
-    case 'ChevronRight':
+    case 'chevronright':
+    case 'arrowright':
       return <IoChevronForward {...props} />;
-    case 'Clock':
+    case 'clock':
+    case 'time':
       return <IoTime {...props} />;
-    case 'MapPin':
+    case 'mappin':
+    case 'location':
+    case 'address':
+    case 'pin':
       return <IoLocation {...props} />;
-    case 'Sun':
+    case 'sun':
+    case 'light':
       return <IoSunny {...props} />;
-    case 'Moon':
+    case 'moon':
+    case 'dark':
       return <IoMoon {...props} />;
-    case 'Close':
-    case 'X':
+    case 'close':
+    case 'x':
       return <IoClose {...props} />;
-    case 'Check':
+    case 'check':
+    case 'checkmark':
       return <IoCheckmark {...props} />;
-    case 'Copy':
+    case 'copy':
       return <IoCopy {...props} />;
-    case 'Calendar':
+    case 'calendar':
+    case 'event':
+    case 'events':
+    case 'schedule':
       return <IoCalendar {...props} />;
-    case 'Share':
+    case 'share':
       return <IoShareSocial {...props} />;
     default:
-      return <IoHelpCircle {...props} />;
+      // Heç bir cihazda '?' (sual işarəsi) çıxmaması üçün parlaq ulduz/konsyerj ikonu qaytarırıq
+      return <IoSparkles {...props} />;
   }
 };
