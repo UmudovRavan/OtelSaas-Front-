@@ -16,7 +16,8 @@ import { HubType } from '../../types/api';
 
 export const EntertainmentPage: React.FC = () => {
   const { slug, code } = useParams<{ slug?: string; code?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,8 +78,8 @@ export const EntertainmentPage: React.FC = () => {
         schedule: it.portionOrDuration || '10:00–23:00',
       }));
     }
-    return hotelSlug === 'skyhill' ? entertainmentItems : [];
-  }, [hubData, catDetail, hotelSlug, hubCover]);
+    return isDemoHotel ? entertainmentItems : [];
+  }, [hubData, catDetail, hotelSlug, hubCover, isDemoHotel]);
 
   // Active item detail modal
   const [activeItem, setActiveItem] = useState<EntertainmentItem | null>(() => {
@@ -122,8 +123,8 @@ export const EntertainmentPage: React.FC = () => {
   }, [code, location.pathname]);
 
   const homePath = slug ? `/hotel/${slug}` : '/';
-  const displayPhone = liveHotel?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (liveHotel?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-hotel-sans flex justify-center selection:bg-[#A78BFA] selection:text-black transition-colors duration-200">

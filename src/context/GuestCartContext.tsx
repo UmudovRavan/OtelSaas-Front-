@@ -93,7 +93,7 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       }
     } catch {}
-    return 'skyhill';
+    return 'altensor';
   }, []);
 
   const { data: fullCatalog } = useFullCatalog(currentSlug);
@@ -142,8 +142,8 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           continue;
         }
 
-        // 2. Fallback to local files only for skyhill
-        if (currentSlug === 'skyhill') {
+        // 2. Fallback to local files only for altensor / skyhill
+        if (currentSlug === 'altensor' || currentSlug === 'skyhill') {
           const found = findFoodItemById(id);
           if (found) {
             list.push({

@@ -182,14 +182,14 @@ export const LoginPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => handleFillDemo('admin@skyhill.az', 'Hotel123!')}
+              onClick={() => handleFillDemo('admin@altensor.az', 'Hotel123!')}
               className="py-2 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium text-center transition-all active:scale-95"
             >
-              🏨 Skyhill Admin
+              🏨 Altensor Admin
             </button>
             <button
               type="button"
-              onClick={() => handleFillDemo('reception@skyhill.az', 'Reception123!')}
+              onClick={() => handleFillDemo('reception@altensor.az', 'Reception123!')}
               className="py-2 px-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium text-center transition-all active:scale-95"
             >
               🛎️ Resepşn

@@ -41,19 +41,19 @@ export interface HotelData {
 }
 
 export const defaultHotelData: HotelData = {
-  name: "Hotel & Resort Baku",
+  name: "Altensor Otel",
   stars: 5,
-  description: "Xoş gəlmisiniz! Sizin rahatlığınız və unudulmaz istirahətiniz üçün 24/7 xidmətinizdəyik.",
-  coverImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80",
-  logo: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=200&q=80",
-  phone: "+994 12 599 00 00",
-  whatsapp: "994501234567",
+  description: "Lənkəranın füsunkar təbiətində yerləşən Altensor Otel-ə xoş gəlmisiniz! Sizin rahatlığınız və unudulmaz istirahətiniz üçün 24/7 xidmətinizdəyik.",
+  coverImage: "/media/guest/hero.webp",
+  logo: "/altensor-logo.png",
+  phone: "+994 25 255 12 34",
+  whatsapp: "994505551234",
   wifi: {
-    ssid: "HotelResort_Guest",
-    pass: "BakuResort2026",
+    ssid: "Altensor_Guest",
+    pass: "Altensor2026",
   },
-  address: "Neftçilər prospekti 102, Bakı",
-  mapUrl: "https://maps.google.com",
+  address: "Heydər Əliyev prospekti, Lənkəran, Azərbaycan",
+  mapUrl: "https://maps.google.com/?q=Lankaran%2C+Azerbaijan",
   categories: [
     {
       id: "dining",

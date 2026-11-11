@@ -1,4 +1,4 @@
-export function mapActionUrlToRoute(actionUrl?: string | null, slug: string = 'skyhill'): string {
+export function mapActionUrlToRoute(actionUrl?: string | null, slug: string = 'altensor'): string {
   if (!actionUrl) return '#';
   if (actionUrl.startsWith('http://') || actionUrl.startsWith('https://') || actionUrl.startsWith('tel:') || actionUrl.startsWith('mailto:')) {
     return actionUrl;

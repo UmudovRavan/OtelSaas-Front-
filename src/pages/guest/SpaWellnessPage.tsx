@@ -17,7 +17,8 @@ import { HubType } from '../../types/api';
 
 export const SpaWellnessPage: React.FC = () => {
   const { slug, code } = useParams<{ slug?: string; code?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,8 +54,8 @@ export const SpaWellnessPage: React.FC = () => {
         items: [],
       }));
     }
-    return hotelSlug === 'skyhill' ? spaCategories : [];
-  }, [hubData, hotelSlug, hubCover]);
+    return isDemoHotel ? spaCategories : [];
+  }, [hubData, hotelSlug, hubCover, isDemoHotel]);
 
   // Active subpage/category (either from URL /c/:code or /p/:code, or state)
   const [activeCategory, setActiveCategory] = useState<SpaCategory | null>(() => {
@@ -132,8 +133,8 @@ export const SpaWellnessPage: React.FC = () => {
   }, [code, location.pathname, slug, navigate]);
 
   const homePath = slug ? `/hotel/${slug}` : '/';
-  const displayPhone = liveHotel?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (liveHotel?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
   const handleCategoryClick = (cat: SpaCategory) => {
     setActiveCategory(cat);

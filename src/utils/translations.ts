@@ -86,8 +86,8 @@ export const translations: Record<Language, TranslationSchema> = {
   az: {
     statusActive: "Otaq Xidməti Aktivdir",
     starsLabel: "5 Ulduzlu Lüks Qonaqlama",
-    hotelName: "Hotel & Resort Baku",
-    hotelDescription: "Xoş gəlmisiniz! Sizin rahatlığınız və unudulmaz istirahətiniz üçün 24/7 xidmətinizdəyik.",
+    hotelName: "Altensor Otel",
+    hotelDescription: "Lənkəranın füsunkar təbiətində yerləşən Altensor Otel-ə xoş gəlmisiniz! Sizin rahatlığınız və unudulmaz istirahətiniz üçün 24/7 xidmətinizdəyik.",
     quickActions: {
       roomService: "Otaq Servisi",
       wifi: "Wi-Fi",
@@ -142,7 +142,7 @@ export const translations: Record<Language, TranslationSchema> = {
       orderBtn: "Resepşna Sifariş / Sual Göndər",
       closeBtn: "Geri Qayıt",
     },
-    footerAddress: "Neftçilər prospekti 102, Bakı, Azərbaycan",
+    footerAddress: "Heydər Əliyev prospekti, Lənkəran, Azərbaycan",
     footerPowered: "Powered by Hotel QR Concierge SaaS",
     categories: [
       {
@@ -256,8 +256,8 @@ export const translations: Record<Language, TranslationSchema> = {
   en: {
     statusActive: "Room Service Active",
     starsLabel: "5-Star Luxury Stay",
-    hotelName: "Hotel & Resort Baku",
-    hotelDescription: "Welcome! We are at your service 24/7 for your ultimate comfort and unforgettable vacation.",
+    hotelName: "Altensor Hotel",
+    hotelDescription: "Welcome to Altensor Hotel, nestled in the scenic subtropical nature of Lankaran! We are at your service 24/7 for your ultimate comfort and unforgettable vacation.",
     quickActions: {
       roomService: "Room Service",
       wifi: "Wi-Fi",
@@ -312,7 +312,7 @@ export const translations: Record<Language, TranslationSchema> = {
       orderBtn: "Send Order / Question to Reception",
       closeBtn: "Go Back",
     },
-    footerAddress: "102 Neftchilar Avenue, Baku, Azerbaijan",
+    footerAddress: "Heydar Aliyev Avenue, Lankaran, Azerbaijan",
     footerPowered: "Powered by Hotel QR Concierge SaaS",
     categories: [
       {
@@ -426,8 +426,8 @@ export const translations: Record<Language, TranslationSchema> = {
   ru: {
     statusActive: "Обслуживание номеров активно",
     starsLabel: "5-звездочный отель",
-    hotelName: "Hotel & Resort Baku",
-    hotelDescription: "Добро пожаловать! Мы к вашим услугам 24/7 для вашего максимального комфорта и незабываемого отдыха.",
+    hotelName: "Отель Altensor",
+    hotelDescription: "Добро пожаловать в отель Altensor в Ленкорани! Мы к вашим услугам 24/7 для вашего максимального комфорта и незабываемого отдыха.",
     quickActions: {
       roomService: "Сервис в номер",
       wifi: "Wi-Fi",
@@ -482,7 +482,7 @@ export const translations: Record<Language, TranslationSchema> = {
       orderBtn: "Отправить заказ / вопрос на ресепшн",
       closeBtn: "Назад",
     },
-    footerAddress: "Проспект Нефтяников 102, Баку, Азербайджан",
+    footerAddress: "Проспект Гейдара Алиева, Ленкорань, Азербайджан",
     footerPowered: "Powered by Hotel QR Concierge SaaS",
     categories: [
       {

@@ -12,7 +12,8 @@ import { InquirySheet } from './components/InquirySheet';
 
 export const CartPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
 
   const { currentLang } = useLanguage();
@@ -46,8 +47,8 @@ export const CartPage: React.FC = () => {
 
   const homePath = `/${hotelSlug}`;
   const menuPath = `/${hotelSlug}/hotel/g/192`;
-  const displayPhone = portalData?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (portalData?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayPhone = portalData?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (portalData?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
   const serviceFeePercent = portalData?.serviceFeePercent || 0;
   const serviceFeeAmount = (totalPrice * serviceFeePercent) / 100;

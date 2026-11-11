@@ -12,7 +12,7 @@ import {
 /**
  * Fetch dynamic hotel portal data (stories, hubs, daily specials, departments, branding)
  */
-export function useHotelPortal(slug: string = 'skyhill') {
+export function useHotelPortal(slug: string = 'altensor') {
   const { currentLang } = useLanguage();
 
   return useQuery<PublicHotelPortalDto>({
@@ -32,7 +32,7 @@ export function useHotelPortal(slug: string = 'skyhill') {
 /**
  * Fetch dynamic hub data (e.g. 191..196)
  */
-export function useHub(slug: string = 'skyhill', hubCodeOrId?: string | number) {
+export function useHub(slug: string = 'altensor', hubCodeOrId?: string | number) {
   const { currentLang } = useLanguage();
 
   return useQuery<PublicHubDetailDto>({
@@ -54,7 +54,7 @@ export function useHub(slug: string = 'skyhill', hubCodeOrId?: string | number) 
 /**
  * Fetch catalog category / venue detail (e.g. 4578 SHIRVAN)
  */
-export function useCatalogCategory(slug: string = 'skyhill', categoryCodeOrId?: string | number) {
+export function useCatalogCategory(slug: string = 'altensor', categoryCodeOrId?: string | number) {
   const { currentLang } = useLanguage();
 
   return useQuery<PublicCatalogCategoryDetailDto>({
@@ -76,7 +76,7 @@ export function useCatalogCategory(slug: string = 'skyhill', categoryCodeOrId?: 
 /**
  * Fetch catalog item detail (e.g. 43107..43234)
  */
-export function useCatalogItem(slug: string = 'skyhill', itemCodeOrId?: string | number) {
+export function useCatalogItem(slug: string = 'altensor', itemCodeOrId?: string | number) {
   const { currentLang } = useLanguage();
 
   return useQuery<PublicCatalogItemDto>({
@@ -98,7 +98,7 @@ export function useCatalogItem(slug: string = 'skyhill', itemCodeOrId?: string |
 /**
  * Fetch complete catalog for /cart and /favourites
  */
-export function useFullCatalog(slug: string = 'skyhill') {
+export function useFullCatalog(slug: string = 'altensor') {
   const { currentLang } = useLanguage();
 
   return useQuery<PublicFullCatalogDto>({

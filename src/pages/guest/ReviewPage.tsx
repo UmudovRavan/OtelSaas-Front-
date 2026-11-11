@@ -37,7 +37,7 @@ const RATING_LABELS: Record<
 
 export const ReviewPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 

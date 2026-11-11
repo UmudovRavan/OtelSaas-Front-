@@ -11,7 +11,8 @@ import { HubType } from '../../types/api';
 
 export const ContactPage: React.FC = () => {
   const { slug, code } = useParams<{ slug?: string; code?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -64,14 +65,14 @@ export const ContactPage: React.FC = () => {
   const homePath = slug ? `/hotel/${slug}` : '/';
 
   // Dynamic Hotel Info with Reference Fallback
-  const displayPhone = liveHotel?.phone || (hotelSlug === 'skyhill' ? '+994 12 555 1234' : '');
+  const displayPhone = liveHotel?.phone || (isDemoHotel ? '+994 25 255 12 34' : '');
   const rawPhone = displayPhone.replace(/[^0-9+]/g, '');
-  const displayWhatsapp = (liveHotel?.whatsApp || (hotelSlug === 'skyhill' ? '+994 50 555 1234' : '')).replace(/[^0-9]/g, '');
-  const displayEmail = liveHotel?.email || (hotelSlug === 'skyhill' ? 'info@skyhill.az' : '');
-  const displayAddress = liveHotel?.address || (hotelSlug === 'skyhill' ? 'Pirqulu, Azərbaycan' : '');
+  const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? '+994 50 555 12 34' : '')).replace(/[^0-9]/g, '');
+  const displayEmail = liveHotel?.email || (isDemoHotel ? 'info@altensor.az' : '');
+  const displayAddress = liveHotel?.address || (isDemoHotel ? 'Lənkəran, Azərbaycan' : '');
   const displayMapUrl =
     liveHotel?.mapUrl ||
-    (hotelSlug === 'skyhill' ? 'https://www.google.com/maps/search/?api=1&query=Pirqulu%2C+%C5%9Eamax%C4%B1' : '');
+    (isDemoHotel ? 'https://www.google.com/maps/search/?api=1&query=Lankaran%2C+Azerbaijan' : '');
 
   // Exact Contact Items matching real data
   const contactItems: Array<{
@@ -417,7 +418,7 @@ export const ContactPage: React.FC = () => {
                         </span>
                       </div>
                     ))
-                  ) : hotelSlug === 'skyhill' ? (
+                  ) : isDemoHotel ? (
                     <>
                       <div className="p-3 rounded-xl bg-[var(--bg-subcard)]/70 border border-[var(--border-color)] flex items-center justify-between">
                         <div>
@@ -482,7 +483,7 @@ export const ContactPage: React.FC = () => {
                       <div className="p-3 rounded-xl bg-[var(--bg-subcard)]/70 border border-[var(--border-color)] flex items-center justify-between">
                         <div>
                           <span className="font-bold block">Tədbirlər və Konfrans (ZIRVE, TUSI)</span>
-                          <span className="text-[11px] text-[var(--text-muted)]">events@skyhill.az</span>
+                          <span className="text-[11px] text-[var(--text-muted)]">events@altensor.az</span>
                         </div>
                         <span className="font-bold text-[#a87b51] dark:text-[#A78BFA] px-2.5 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[11px]">
                           Sifarişlə

@@ -375,9 +375,9 @@ export const foodBeverageVenues: VenueCategory[] = [
     "items": [
       {
         "id": "43168",
-        "name": "Skyhill burger",
-        "nameEn": "Skyhill Burger",
-        "nameRu": "Бургер Skyhill",
+        "name": "Altensor burger",
+        "nameEn": "Altensor Burger",
+        "nameRu": "Бургер Altensor",
         "desc": "Dana kotleti, çeddar, karamelizə soğan, kartof fri",
         "badge": "",
         "price": "16.00 ₼",

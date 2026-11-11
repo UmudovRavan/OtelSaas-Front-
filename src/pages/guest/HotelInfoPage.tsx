@@ -25,7 +25,8 @@ interface InfoItemDetail {
 
 export const HotelInfoPage: React.FC = () => {
   const { slug, code } = useParams<{ slug?: string; code?: string }>();
-  const hotelSlug = slug || 'hotel-resort';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill' || hotelSlug === 'hotel-resort';
   const navigate = useNavigate();
 
   const [selectedLang, setSelectedLang] = useState<Language>('az');
@@ -72,18 +73,18 @@ export const HotelInfoPage: React.FC = () => {
     hubData?.title ||
     hubData?.titleTr?.az ||
     liveHotel?.name ||
-    (hotelSlug === 'skyhill' ? t.hotelName : 'Otel');
+    (isDemoHotel ? t.hotelName : 'Otel');
   const displayHotelBio =
     hubData?.subtitle ||
     hubData?.subtitleTr?.az ||
     liveHotel?.bio ||
-    (hotelSlug === 'skyhill' ? t.hotelDescription : '');
+    (isDemoHotel ? t.hotelDescription : '');
   const displayCoverImage = resolveMediaUrl(
     hubData?.coverImageUrl,
-    liveHotel?.coverImageUrl ? resolveBackendMediaUrl(liveHotel.coverImageUrl) : '/media/guest/tile-hotel.webp'
+    liveHotel?.coverImageUrl ? resolveBackendMediaUrl(liveHotel.coverImageUrl) : '/media/guest/hero.webp'
   );
-  const displayPhone = liveHotel?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (liveHotel?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
   const homePath = slug ? `/hotel/${slug}` : '/';
 
@@ -207,9 +208,9 @@ export const HotelInfoPage: React.FC = () => {
           <circle cx="12" cy="10" r="3" />
         </svg>
       ),
-      contentAz: `Otelin Dəqiq Ünvanı:\n${liveHotel?.address || hotel.address}\n\n• Heydər Əliyev Beynəlxalq Hava Limanından məsafə: 28 dəqiqə\n• Şəhər mərkəzindən məsafə: 10 dəqiqə\n• 24 saat VIP qarşılama və hava limanı transfer xidməti mövcuddur.\n\nİstiqamət və dəqiq GPS naviqasiyası üçün Google Maps xəritəsindən istifadə edin.`,
-      contentEn: `Hotel Address:\n${liveHotel?.address || hotel.address}\n\n• Distance from Airport: 28 minutes\n• Distance from City Center: 10 minutes\n• 24/7 VIP airport transfer available upon request.`,
-      contentRu: `Точный адрес отеля:\n${liveHotel?.address || hotel.address}\n\n• 28 минут от Международного Аэропорта\n• Круглосуточный трансфер доступен по запросу.`,
+      contentAz: `Otelin Dəqiq Ünvanı:\n${liveHotel?.address || hotel.address}\n\n• Lənkəran Beynəlxalq Hava Limanından məsafə: 15 dəqiqə\n• Şəhər mərkəzindən məsafə: 5 dəqiqə\n• Xəzər dənizi sahilinə: 10 dəqiqə\n• 24 saat VIP qarşılama və hava limanı transfer xidməti mövcuddur.\n\nİstiqamət və dəqiq GPS naviqasiyası üçün Google Maps xəritəsindən istifadə edin.`,
+      contentEn: `Hotel Address:\n${liveHotel?.address || hotel.address}\n\n• Distance from Lankaran Airport: 15 minutes\n• Distance from City Center: 5 minutes\n• Caspian Sea Coast: 10 minutes\n• 24/7 VIP airport transfer available upon request.`,
+      contentRu: `Точный адрес отеля:\n${liveHotel?.address || hotel.address}\n\n• 15 минут от Международного Аэропорта Ленкорани\n• 5 минут от центра города\n• 10 минут до побережья Каспийского моря\n• Круглосуточный трансфер доступен по запросу.`,
     },
     {
       id: 'contact',

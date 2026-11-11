@@ -259,7 +259,7 @@ export const StoriesManagementTab: React.FC<Props> = ({ tenantId, showToast }) =
                   type="text"
                   value={actionUrl}
                   onChange={(e) => setActionUrl(e.target.value)}
-                  placeholder="/skyhill/hotel/g/191 və ya /skyhill/hotel/c/4578"
+                  placeholder="/altensor/hotel/g/191 və ya /altensor/hotel/c/4578"
                   className="w-full px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-main)]"
                 />
               </div>

@@ -42,8 +42,8 @@ export const ReceptionPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryTenantId = searchParams.get('tenantId');
-  const activeSlug = searchParams.get('slug') || user?.tenantSlug || 'skyhill';
-  const activeHotelName = user?.tenantName || (searchParams.get('slug') ? searchParams.get('slug') : 'Sky Hill Pirqulu');
+  const activeSlug = searchParams.get('slug') || user?.tenantSlug || 'altensor';
+  const activeHotelName = user?.tenantName || (searchParams.get('slug') ? searchParams.get('slug') : 'Altensor Otel Lənkəran');
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<ReceptionTab>('inquiries');

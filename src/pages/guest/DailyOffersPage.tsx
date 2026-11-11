@@ -13,7 +13,8 @@ import { HubType } from '../../types/api';
 
 export const DailyOffersPage: React.FC = () => {
   const { slug, code } = useParams<{ slug?: string; code?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -55,8 +56,8 @@ export const DailyOffersPage: React.FC = () => {
         ordering: 1,
       }));
     }
-    return hotelSlug === 'skyhill' ? dailyOffers : [];
-  }, [hubData, hotelSlug, hubCover]);
+    return isDemoHotel ? dailyOffers : [];
+  }, [hubData, hotelSlug, hubCover, isDemoHotel]);
 
   // Active offer item (if URL /p/:code is one of the offers, or when user clicks an offer)
   const [activeItem, setActiveItem] = useState<DailyOfferItem | null>(() => {
@@ -104,8 +105,8 @@ export const DailyOffersPage: React.FC = () => {
   }, [code, location.pathname]);
 
   const homePath = slug ? `/hotel/${slug}` : '/';
-  const displayPhone = liveHotel?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (liveHotel?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
   const handleItemClick = (item: DailyOfferItem) => {
     setActiveItem(item);

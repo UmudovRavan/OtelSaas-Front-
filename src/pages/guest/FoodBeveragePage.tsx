@@ -18,7 +18,8 @@ import { HubType } from '../../types/api';
 
 export const FoodBeveragePage: React.FC = () => {
   const { slug, code } = useParams<{ slug?: string; code?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -55,8 +56,8 @@ export const FoodBeveragePage: React.FC = () => {
         items: [],
       }));
     }
-    return hotelSlug === 'skyhill' ? foodBeverageVenues : [];
-  }, [hubData, hotelSlug, hubCover]);
+    return isDemoHotel ? foodBeverageVenues : [];
+  }, [hubData, hotelSlug, hubCover, isDemoHotel]);
 
   // Active venue selection (only if in category view /c/:code)
   const [activeVenue, setActiveVenue] = useState<VenueCategory | null>(() => {
@@ -139,8 +140,8 @@ export const FoodBeveragePage: React.FC = () => {
   }, [hotelSlug, selectedLang]);
 
   const homePath = slug ? `/hotel/${slug}` : '/';
-  const displayPhone = liveHotel?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (liveHotel?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
   const handleVenueClick = (venue: VenueCategory) => {
     setActiveVenue(venue);

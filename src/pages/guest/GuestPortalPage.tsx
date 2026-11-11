@@ -39,7 +39,8 @@ interface StoryItem {
 
 export const GuestPortalPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
-  const hotelSlug = slug || 'skyhill';
+  const hotelSlug = slug || 'altensor';
+  const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill';
   const navigate = useNavigate();
 
   const { currentLang: selectedLang, setLanguage: setSelectedLang } = useLanguage();
@@ -83,14 +84,14 @@ export const GuestPortalPage: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  const displayHotelName = portalData?.name || (hotelSlug === 'skyhill' ? t.hotelName : 'Otel');
-  const displaySubtitle = tr(portalData?.subtitleTr, portalData?.subtitle || (hotelSlug === 'skyhill' ? 'Pirqulu' : ''), selectedLang as SupportedLang);
-  const displayTagline = tr(portalData?.taglineTr, portalData?.tagline || (hotelSlug === 'skyhill' ? 'Hotel & Spa' : ''), selectedLang as SupportedLang);
-  const displayHotelBio = tr(portalData?.bioTr, portalData?.bio || (hotelSlug === 'skyhill' ? t.hotelDescription : ''), selectedLang as SupportedLang);
+  const displayHotelName = portalData?.name || (isDemoHotel ? t.hotelName : 'Otel');
+  const displaySubtitle = tr(portalData?.subtitleTr, portalData?.subtitle || (isDemoHotel ? (selectedLang === 'ru' ? 'Ленкорань' : selectedLang === 'en' ? 'Lankaran' : 'Lənkəran') : ''), selectedLang as SupportedLang);
+  const displayTagline = tr(portalData?.taglineTr, portalData?.tagline || (isDemoHotel ? 'Hotel & Resort' : ''), selectedLang as SupportedLang);
+  const displayHotelBio = tr(portalData?.bioTr, portalData?.bio || (isDemoHotel ? t.hotelDescription : ''), selectedLang as SupportedLang);
   const displayCoverImage = resolveMediaUrl(portalData?.coverImageUrl, '/media/guest/hero.webp');
-  const displayLogo = portalData?.logoUrl ? resolveMediaUrl(portalData.logoUrl, '') : (hotelSlug === 'skyhill' ? hotel.logo : '');
-  const displayPhone = portalData?.phone || (hotelSlug === 'skyhill' ? hotel.phone : '');
-  const displayWhatsapp = (portalData?.whatsApp || (hotelSlug === 'skyhill' ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+  const displayLogo = portalData?.logoUrl ? resolveMediaUrl(portalData.logoUrl, '') : (isDemoHotel ? hotel.logo : '');
+  const displayPhone = portalData?.phone || (isDemoHotel ? hotel.phone : '');
+  const displayWhatsapp = (portalData?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
   const starCount = portalData?.starRating || 5;
   const starString = '★'.repeat(Math.max(1, Math.min(5, starCount)));
 
@@ -144,7 +145,7 @@ export const GuestPortalPage: React.FC = () => {
               actionUrl: l.actionUrl ? resolveMediaUrl(l.actionUrl) : '#',
             })),
           }))
-      : (hotelSlug === 'skyhill' ? t.categories : []);
+      : (isDemoHotel ? t.categories : []);
 
   const allLinksFlat: ServiceItemTranslation[] = displayCategories.flatMap((c) => c.items);
 
@@ -157,7 +158,7 @@ export const GuestPortalPage: React.FC = () => {
           location: a.location || displayHotelName,
           category: a.category || 'Tədbir',
         }))
-      : (hotelSlug === 'skyhill' ? t.activities : []);
+      : (isDemoHotel ? t.activities : []);
 
   const handleLinkClick = (item: ServiceItemTranslation) => {
     if (item.actionUrl?.startsWith('http')) {
@@ -190,16 +191,16 @@ export const GuestPortalPage: React.FC = () => {
     return fallback;
   };
 
-  const bookingUrl = portalData?.bookingUrl || (hotelSlug === 'skyhill' ? resolveLinkUrl('booking', 'https://www.booking.com') : undefined);
-  const tripAdvisorUrl = portalData?.tripAdvisorUrl || (hotelSlug === 'skyhill' ? resolveLinkUrl('tripadvisor', 'https://www.tripadvisor.com') : undefined);
-  const googleReviewUrl = resolveLinkUrl('google', portalData?.mapUrl || (hotelSlug === 'skyhill' ? 'https://maps.google.com/?q=Baku' : ''));
-  const instagramUrl = portalData?.instagramUrl || (hotelSlug === 'skyhill' ? resolveLinkUrl('instagram', 'https://www.instagram.com/') : undefined);
-  const facebookUrl = portalData?.facebookUrl || (hotelSlug === 'skyhill' ? resolveLinkUrl('facebook', 'https://www.facebook.com/') : undefined);
-  const tiktokUrl = portalData?.tikTokUrl || (hotelSlug === 'skyhill' ? resolveLinkUrl('tiktok', 'https://www.tiktok.com/') : undefined);
-  const youtubeUrl = portalData?.youtubeUrl || (hotelSlug === 'skyhill' ? resolveLinkUrl('youtube', 'https://www.youtube.com/') : undefined);
+  const bookingUrl = portalData?.bookingUrl || (isDemoHotel ? resolveLinkUrl('booking', 'https://www.booking.com') : undefined);
+  const tripAdvisorUrl = portalData?.tripAdvisorUrl || (isDemoHotel ? resolveLinkUrl('tripadvisor', 'https://www.tripadvisor.com') : undefined);
+  const googleReviewUrl = resolveLinkUrl('google', portalData?.mapUrl || (isDemoHotel ? 'https://maps.google.com/?q=Lankaran%2C+Azerbaijan' : ''));
+  const instagramUrl = portalData?.instagramUrl || (isDemoHotel ? resolveLinkUrl('instagram', 'https://www.instagram.com/') : undefined);
+  const facebookUrl = portalData?.facebookUrl || (isDemoHotel ? resolveLinkUrl('facebook', 'https://www.facebook.com/') : undefined);
+  const tiktokUrl = portalData?.tikTokUrl || (isDemoHotel ? resolveLinkUrl('tiktok', 'https://www.tiktok.com/') : undefined);
+  const youtubeUrl = portalData?.youtubeUrl || (isDemoHotel ? resolveLinkUrl('youtube', 'https://www.youtube.com/') : undefined);
   const telegramUrl = portalData?.telegram
     ? (portalData.telegram.startsWith('http') ? portalData.telegram : `https://t.me/${portalData.telegram.replace('@', '')}`)
-    : (hotelSlug === 'skyhill' ? resolveLinkUrl('telegram', 'https://t.me/skyhill_bot') : undefined);
+    : (isDemoHotel ? resolveLinkUrl('telegram', 'https://t.me/altensor_bot') : undefined);
 
   // 6 Dairəvi Story Highlights (Fallback & Default)
   const defaultStories: StoryItem[] = [
@@ -439,7 +440,7 @@ export const GuestPortalPage: React.FC = () => {
           ),
           targetSection: 'hotel-info' as MainCardSectionId,
         }))
-      : (hotelSlug === 'skyhill' ? defaultStories : []);
+      : (isDemoHotel ? defaultStories : []);
 
   // Dynamic Hubs from backend or fallback
   const mainCards =
@@ -453,7 +454,7 @@ export const GuestPortalPage: React.FC = () => {
           image: resolveMediaUrl(hub.coverImageUrl, '/media/guest/tile-hotel.webp'),
           actionUrl: `/${hotelSlug}/hotel/g/${hub.externalId || hub.code}`,
         }))
-      : (hotelSlug === 'skyhill' ? defaultMainCards : []);
+      : (isDemoHotel ? defaultMainCards : []);
 
   // Filter links for specific modals
   const foodAndDrinkLinks = allLinksFlat.filter((l) => {
@@ -862,7 +863,7 @@ export const GuestPortalPage: React.FC = () => {
             className="relative min-h-[108px] rounded-[14px] overflow-hidden text-white bg-[#211E30] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07),0_6px_16px_rgba(0,0,0,0.22)] flex active:scale-[0.98] transition-transform group focus:outline-none"
           >
             <img
-              src="/media/guest/hero.webp"
+              src="/media/guest/review-banner.webp"
               alt="Rəy bildirin"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -870,7 +871,7 @@ export const GuestPortalPage: React.FC = () => {
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(14,11,9,.12), rgba(14,11,9,.28) 45%, rgba(14,11,9,.62))',
+                  'linear-gradient(180deg, rgba(18,16,28,.38), rgba(18,16,28,.55) 50%, rgba(18,16,28,.78))',
               }}
             />
 

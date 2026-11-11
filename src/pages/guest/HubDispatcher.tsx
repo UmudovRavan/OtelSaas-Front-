@@ -10,12 +10,12 @@ import { ContactPage } from './ContactPage';
 import { DailyOffersPage } from './DailyOffersPage';
 
 export const HubDispatcher: React.FC = () => {
-  const { slug = 'skyhill', code = '191' } = useParams<{ slug?: string; code?: string }>();
+  const { slug = 'altensor', code = '191' } = useParams<{ slug?: string; code?: string }>();
   const navigate = useNavigate();
   const normalizedCode = code.toLowerCase();
 
-  // Fast-path known static hub codes for skyhill reference
-  if (slug === 'skyhill') {
+  // Fast-path known static hub codes for altensor / skyhill reference
+  if (slug === 'altensor' || slug === 'skyhill') {
     if (normalizedCode === '191' || normalizedCode === 'info') {
       return <HotelInfoPage />;
     }

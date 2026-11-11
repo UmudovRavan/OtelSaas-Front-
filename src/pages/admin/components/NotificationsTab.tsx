@@ -239,7 +239,7 @@ export const NotificationsTab: React.FC<Props> = ({ tenantId, showToast }) => {
               type="email"
               value={emailAddress}
               onChange={(e) => setEmailAddress(e.target.value)}
-              placeholder="reception@skyhill.az"
+              placeholder="reception@altensor.az"
               className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[#A78BFA]"
             />
           </div>

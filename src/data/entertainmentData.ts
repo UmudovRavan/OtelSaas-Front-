@@ -40,7 +40,7 @@ export const entertainmentItems: EntertainmentItem[] = [
     price: '14.00 ₼',
     priceNum: 14,
     image: '/media/guest/cocktails.webp',
-    description: 'Skyhill Sunset — təzə nar şirəsi, portağal likörü, premium ağ rom və laym.',
+    description: 'Altensor Sunset — təzə nar şirəsi, portağal likörü, premium ağ rom və laym.',
     schedule: '16:00 – 02:00 · SAQI Lounge'
   },
   {
@@ -152,22 +152,22 @@ export const entertainmentItems: EntertainmentItem[] = [
     price: '25.00 ₼',
     priceNum: 25,
     image: '/media/guest/hiking-2.webp',
-    description: 'Təcrübəli bələdçi ilə Şamaxı-Pirqulu dağ cığırlarında eko-yürüş. Təmiz hava, dağ bulaqları və fotoqraflıq nöqtələri.',
+    description: 'Təcrübəli bələdçi ilə Lənkəranın füsunkar Talış meşələrində eko-yürüş. Təmiz dağ-meşə havası, bulaqlar və fotoqraflıq nöqtələri.',
     schedule: 'Hər səhər 09:00 · Otelin əsas çıxışından'
   },
   {
-    id: 'observatory-tour',
+    id: 'lankaran-eco-tour',
     code: '43224',
-    title: 'Rəsədxanaya gecə turu',
-    titleEn: 'Observatory Night Tour',
-    titleRu: 'Ночная экскурсия в обсерваторию',
-    subtitle: 'Şamaxı Astrofizika Rəsədxanası',
+    title: 'Çay plantasiyaları və Xanbulan gölü turu',
+    titleEn: 'Tea Plantations & Khanbulan Lake Tour',
+    titleRu: 'Тур по чайным плантациям и озеру Ханбулан',
+    subtitle: 'Lənkəran Eko-Aqro Turizm',
     badge: '',
     price: '35.00 ₼',
     priceNum: 35,
     image: '/media/guest/stars.webp',
-    description: 'Böyük teleskopla ulduzlara, planetlərə və Aya baxış. Peşəkar astronomun canlı izahı və gecə çay süfrəsi.',
-    schedule: 'Çərşənbə və Şənbə 21:00 · Transfer daxildir'
+    description: 'Məşhur Lənkəran çay plantasiyalarına səyahət, təbii çay dequstasiyası və Hirkan Milli Parkı daxilində Xanbulan gölü ətrafında istirahət.',
+    schedule: 'Çərşənbə və Şənbə 10:00 · Transfer daxildir'
   }
 ];
 
