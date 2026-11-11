@@ -97,7 +97,8 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return 'altensor';
   }, []);
 
-  const { data: fullCatalog } = useFullCatalog(currentSlug);
+  const hasCartItems = useMemo(() => Object.values(cart).some((q) => q > 0), [cart]);
+  const { data: fullCatalog } = useFullCatalog(currentSlug, hasCartItems);
 
   const cartItemsDetailed = useMemo(() => {
     const list: DetailedCartItem[] = [];

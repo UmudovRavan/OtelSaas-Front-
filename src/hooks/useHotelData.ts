@@ -9,6 +9,14 @@ import {
   PublicFullCatalogDto,
 } from '../types/api';
 
+const shouldRetryRequest = (failureCount: number, error: unknown): boolean => {
+  const status = (error as any)?.response?.status;
+  if (status === 404 || status === 403 || status === 401) {
+    return false;
+  }
+  return failureCount < 1;
+};
+
 /**
  * Fetch dynamic hotel portal data (stories, hubs, daily specials, departments, branding)
  */
@@ -25,7 +33,7 @@ export function useHotelPortal(slug: string = 'altensor') {
       return response.data;
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
-    retry: 1,
+    retry: shouldRetryRequest,
   });
 }
 
@@ -47,7 +55,7 @@ export function useHub(slug: string = 'altensor', hubCodeOrId?: string | number)
     },
     enabled: !!hubCodeOrId,
     staleTime: 1000 * 60 * 2,
-    retry: 1,
+    retry: shouldRetryRequest,
   });
 }
 
@@ -69,7 +77,7 @@ export function useCatalogCategory(slug: string = 'altensor', categoryCodeOrId?:
     },
     enabled: !!categoryCodeOrId,
     staleTime: 1000 * 60 * 2,
-    retry: 1,
+    retry: shouldRetryRequest,
   });
 }
 
@@ -91,14 +99,14 @@ export function useCatalogItem(slug: string = 'altensor', itemCodeOrId?: string 
     },
     enabled: !!itemCodeOrId,
     staleTime: 1000 * 60 * 2,
-    retry: 1,
+    retry: shouldRetryRequest,
   });
 }
 
 /**
  * Fetch complete catalog for /cart and /favourites
  */
-export function useFullCatalog(slug: string = 'altensor') {
+export function useFullCatalog(slug: string = 'altensor', enabled: boolean = true) {
   const { currentLang } = useLanguage();
 
   return useQuery<PublicFullCatalogDto>({
@@ -110,8 +118,9 @@ export function useFullCatalog(slug: string = 'altensor') {
       }
       return response.data;
     },
+    enabled,
     staleTime: 1000 * 60 * 3,
-    retry: 1,
+    retry: shouldRetryRequest,
   });
 }
 

@@ -1,30 +1,36 @@
 import { API_BASE_URL } from '../services/api/client';
 import altensorLogo from '../assets/images/altensor-logo.png';
 
-const rawGuestModules = import.meta.glob('../assets/guest/*.{webp,png,jpg,jpeg}', {
+const rawGuestModules = import.meta.glob('../assets/guest/*.{jpg,jpeg,png,webp}', {
   eager: true,
   import: 'default',
 }) as Record<string, string>;
 
-const guestMediaMap: Record<string, string> = {};
+const guestMediaByName: Record<string, string> = {};
+const guestMediaByStem: Record<string, string> = {};
+
 for (const [modulePath, resolvedUrl] of Object.entries(rawGuestModules)) {
   const fileName = modulePath.split('/').pop();
   if (fileName) {
-    guestMediaMap[fileName.toLowerCase()] = resolvedUrl;
+    const lower = fileName.toLowerCase();
+    const stem = lower.replace(/\.[^.]+$/, '');
+    guestMediaByName[lower] = resolvedUrl;
+    guestMediaByStem[stem] = resolvedUrl;
   }
 }
 
-const FILE_ALIASES: Record<string, string> = {
-  'dish-placeholder.webp': 'plate.webp',
+const STEM_ALIASES: Record<string, string> = {
+  'dish-placeholder': 'plate',
 };
 
 function lookupBundledGuestAsset(fileName: string): string | undefined {
   const lower = fileName.toLowerCase();
-  if (lower === 'logo.svg' || lower === 'logo.png' || lower === 'logo.webp' || lower === 'altensor-logo.png') {
+  const stem = lower.replace(/\.[^.]+$/, '');
+  if (stem === 'logo' || stem === 'altensor-logo') {
     return altensorLogo;
   }
-  const target = FILE_ALIASES[lower] || lower;
-  return guestMediaMap[target];
+  const targetStem = STEM_ALIASES[stem] || stem;
+  return guestMediaByName[lower] || guestMediaByStem[targetStem];
 }
 
 export function resolveMediaUrl(url?: string | null, fallbackUrl: string = ''): string {
@@ -34,11 +40,11 @@ export function resolveMediaUrl(url?: string | null, fallbackUrl: string = ''): 
   }
 
   // Rewrite legacy backend IP URLs to the active API domain
-  let normalized = raw
+  const normalized = raw
     .replace(/^https?:\/\/31\.57\.77\.199:5055/i, API_BASE_URL)
     .replace(/^http:\/\/api-modi\.altensor\.com/i, 'https://api-modi.altensor.com');
 
-  // Map local /media/guest/ or legacy /media/skyhill/ assets to Vite-bundled /assets/ URLs
+  // Map local /media/guest/ or legacy /media/skyhill/ assets to Vite-bundled /assets/*.jpg URLs
   if (normalized.includes('/media/guest/') || normalized.includes('/media/skyhill/')) {
     const marker = normalized.includes('/media/guest/') ? '/media/guest/' : '/media/skyhill/';
     const fileName = normalized.split(marker).pop()?.split('?')[0] || '';
@@ -57,8 +63,11 @@ export function resolveMediaUrl(url?: string | null, fallbackUrl: string = ''): 
     return altensorLogo;
   }
 
-  if (!normalized.includes('/') && guestMediaMap[normalized.toLowerCase()]) {
-    return guestMediaMap[normalized.toLowerCase()];
+  if (!normalized.includes('/')) {
+    const bundled = lookupBundledGuestAsset(normalized);
+    if (bundled) {
+      return bundled;
+    }
   }
 
   if (
