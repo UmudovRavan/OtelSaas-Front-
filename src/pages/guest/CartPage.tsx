@@ -9,6 +9,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useHotelPortal } from '../../hooks/useHotelData';
 import { OrderType, SubmitOrderRequestDto, GuestOrderDto } from '../../types/api';
 import { InquirySheet } from './components/InquirySheet';
+import { resolveMediaUrl } from '../../utils/media';
 
 export const CartPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
@@ -254,11 +255,15 @@ export const CartPage: React.FC = () => {
                       {/* Image Thumbnail */}
                       <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--bg-subcard)] flex-none">
                         <img
-                          src={item.image}
+                          src={resolveMediaUrl(item.image, '/media/guest/plate.webp')}
                           alt={item.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = '/media/guest/dish-placeholder.webp';
+                            const fallback = resolveMediaUrl('/media/guest/plate.webp');
+                            if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                              e.currentTarget.dataset.fbApplied = '1';
+                              e.currentTarget.src = fallback;
+                            }
                           }}
                         />
                       </div>

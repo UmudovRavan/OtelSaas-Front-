@@ -125,6 +125,13 @@ export const StoriesManagementTab: React.FC<Props> = ({ tenantId, showToast }) =
               <img
                 src={resolveMediaUrl(story.bannerImageUrl || story.imageUrl, '/media/guest/story-welcome-poster.webp')}
                 alt={story.title}
+                onError={(e) => {
+                  const fallback = resolveMediaUrl('/media/guest/story-welcome-poster.webp');
+                  if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                    e.currentTarget.dataset.fbApplied = '1';
+                    e.currentTarget.src = fallback;
+                  }
+                }}
                 className="w-full h-full object-cover"
               />
               {story.videoUrl && (

@@ -246,7 +246,7 @@ export const SpaWellnessPage: React.FC = () => {
         {/* ===================== 1. HERO HEADER (1:1 with Reference) ===================== */}
         <header className="relative w-full h-[178px] overflow-hidden bg-[#181424] flex-none">
           <img
-            src={activeCategory?.cover || hubCover}
+            src={resolveMediaUrl(activeCategory?.cover || hubCover, '/media/guest/pool-indoor.webp')}
             alt={activeCategory ? activeCategory.title : hubTitle}
             className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
           />
@@ -457,7 +457,7 @@ export const SpaWellnessPage: React.FC = () => {
                       {it.image && (
                         <div className="w-[84px] h-[64px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/30">
                           <img
-                            src={it.image}
+                            src={resolveMediaUrl(it.image, '/media/guest/massage.webp')}
                             alt={it.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
@@ -549,7 +549,7 @@ export const SpaWellnessPage: React.FC = () => {
                 {activeTreatment.image && (
                   <div className="w-full h-[180px] rounded-2xl overflow-hidden bg-black/30">
                     <img
-                      src={activeTreatment.image}
+                      src={resolveMediaUrl(activeTreatment.image, '/media/guest/massage.webp')}
                       alt={activeTreatment.title}
                       className="w-full h-full object-cover"
                     />

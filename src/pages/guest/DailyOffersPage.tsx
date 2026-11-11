@@ -148,7 +148,7 @@ export const DailyOffersPage: React.FC = () => {
         {/* ===================== 1. HERO COVER HEADER (178px) ===================== */}
         <header className="relative w-full h-[178px] overflow-hidden bg-[#241a13] flex-none">
           <img
-            src={activeItem?.image || hubCover}
+            src={resolveMediaUrl(activeItem?.image || hubCover, '/media/guest/chef-special.webp')}
             alt={activeItem?.name || hubTitle}
             className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
           />
@@ -361,7 +361,7 @@ export const DailyOffersPage: React.FC = () => {
                       {/* Thumbnail Image (72x72) */}
                       <div className="w-[72px] h-[72px] rounded-[10px] overflow-hidden bg-[var(--bg-subcard)] shrink-0 relative">
                         <img
-                          src={offer.image}
+                          src={resolveMediaUrl(offer.image, '/media/guest/chef-special.webp')}
                           alt={offer.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />

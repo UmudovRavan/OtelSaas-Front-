@@ -68,7 +68,7 @@ export const LoginPage: React.FC = () => {
       } else {
         // Fallback for mock demo if network is unreachable
         const fallbackRole = detectRoleFromCredentials(cleanEmail);
-        loginWithCredentials(cleanEmail, fallbackRole, 'hotel-resort');
+        loginWithCredentials(cleanEmail, fallbackRole, 'altensor');
         navigate(getDefaultRouteForRole(fallbackRole));
       }
     }
@@ -126,7 +126,7 @@ export const LoginPage: React.FC = () => {
             <input
               type="email"
               required
-              placeholder="admin@hotelresort.com"
+              placeholder="admin@altensor.az"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] px-4 py-3.5 text-sm text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:border-[#A78BFA] focus:outline-none transition-colors"

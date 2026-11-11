@@ -172,7 +172,7 @@ export const FoodBeveragePage: React.FC = () => {
         <header className="relative w-full h-[178px] overflow-hidden bg-[#181424] flex-none">
           {/* Cover image: Restaurant Table cover for main list, or Venue specific cover */}
           <img
-            src={activeVenue ? activeVenue.cover : hubCover}
+            src={resolveMediaUrl(activeVenue ? activeVenue.cover : hubCover, '/media/guest/restaurant-table.webp')}
             alt={activeVenue ? activeVenue.title : hubTitle}
             className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
           />
@@ -271,7 +271,7 @@ export const FoodBeveragePage: React.FC = () => {
                       {/* Thumbnail Image 104x70px */}
                       <div className="w-[104px] h-[70px] sm:w-[110px] sm:h-[72px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/40">
                         <img
-                          src={venue.cover}
+                          src={resolveMediaUrl(venue.cover, '/media/guest/restaurant-table.webp')}
                           alt={venue.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
@@ -382,7 +382,7 @@ export const FoodBeveragePage: React.FC = () => {
                       {item.image && (
                         <div className="w-[84px] h-[64px] sm:w-[92px] sm:h-[68px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/30">
                           <img
-                            src={item.image}
+                            src={resolveMediaUrl(item.image, '/media/guest/plate.webp')}
                             alt={item.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
@@ -559,7 +559,7 @@ export const FoodBeveragePage: React.FC = () => {
                 {activeItem.image && (
                   <div className="w-full h-[180px] rounded-2xl overflow-hidden bg-black/30">
                     <img
-                      src={activeItem.image}
+                      src={resolveMediaUrl(activeItem.image, '/media/guest/plate.webp')}
                       alt={activeItem.name}
                       className="w-full h-full object-cover"
                     />

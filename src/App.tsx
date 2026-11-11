@@ -1,24 +1,53 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { GuestPortalPage } from './pages/guest/GuestPortalPage';
-import { HotelInfoPage } from './pages/guest/HotelInfoPage';
-import { FoodBeveragePage } from './pages/guest/FoodBeveragePage';
-import { SpaWellnessPage } from './pages/guest/SpaWellnessPage';
-import { EntertainmentPage } from './pages/guest/EntertainmentPage';
-import { ContactPage } from './pages/guest/ContactPage';
-import { DailyOffersPage } from './pages/guest/DailyOffersPage';
-import { ReviewPage } from './pages/guest/ReviewPage';
-import { CartPage } from './pages/guest/CartPage';
-import { HubDispatcher } from './pages/guest/HubDispatcher';
 import { GuestCartProvider } from './context/GuestCartContext';
-import { LoginPage } from './pages/auth/LoginPage';
-import { ReceptionPage } from './pages/reception/ReceptionPage';
-import { AdminPage } from './pages/admin/AdminPage';
-import { SuperAdminPage } from './pages/super-admin/SuperAdminPage';
+import { PageLoader } from './components/common/PageLoader';
+import { lazyWithRetry } from './utils/lazyWithRetry';
+
+const HotelInfoPage = lazyWithRetry(() =>
+  import('./pages/guest/HotelInfoPage').then((m) => ({ default: m.HotelInfoPage }))
+);
+const FoodBeveragePage = lazyWithRetry(() =>
+  import('./pages/guest/FoodBeveragePage').then((m) => ({ default: m.FoodBeveragePage }))
+);
+const SpaWellnessPage = lazyWithRetry(() =>
+  import('./pages/guest/SpaWellnessPage').then((m) => ({ default: m.SpaWellnessPage }))
+);
+const EntertainmentPage = lazyWithRetry(() =>
+  import('./pages/guest/EntertainmentPage').then((m) => ({ default: m.EntertainmentPage }))
+);
+const ContactPage = lazyWithRetry(() =>
+  import('./pages/guest/ContactPage').then((m) => ({ default: m.ContactPage }))
+);
+const DailyOffersPage = lazyWithRetry(() =>
+  import('./pages/guest/DailyOffersPage').then((m) => ({ default: m.DailyOffersPage }))
+);
+const ReviewPage = lazyWithRetry(() =>
+  import('./pages/guest/ReviewPage').then((m) => ({ default: m.ReviewPage }))
+);
+const CartPage = lazyWithRetry(() =>
+  import('./pages/guest/CartPage').then((m) => ({ default: m.CartPage }))
+);
+const HubDispatcher = lazyWithRetry(() =>
+  import('./pages/guest/HubDispatcher').then((m) => ({ default: m.HubDispatcher }))
+);
+const LoginPage = lazyWithRetry(() =>
+  import('./pages/auth/LoginPage').then((m) => ({ default: m.LoginPage }))
+);
+const ReceptionPage = lazyWithRetry(() =>
+  import('./pages/reception/ReceptionPage').then((m) => ({ default: m.ReceptionPage }))
+);
+const AdminPage = lazyWithRetry(() =>
+  import('./pages/admin/AdminPage').then((m) => ({ default: m.AdminPage }))
+);
+const SuperAdminPage = lazyWithRetry(() =>
+  import('./pages/super-admin/SuperAdminPage').then((m) => ({ default: m.SuperAdminPage }))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +65,8 @@ export const App: React.FC = () => {
         <AuthProvider>
           <GuestCartProvider>
             <BrowserRouter>
-              <Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
                 {/* 1. Root and Direct Slugs */}
                 <Route path="/" element={<GuestPortalPage />} />
                 <Route path="/hotel/:slug" element={<GuestPortalPage />} />
@@ -135,7 +165,8 @@ export const App: React.FC = () => {
 
                 {/* Fallback to Guest Portal */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </GuestCartProvider>
         </AuthProvider>

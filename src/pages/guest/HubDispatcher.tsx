@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHub } from '../../hooks/useHotelData';
 import { HubType } from '../../types/api';
-import { HotelInfoPage } from './HotelInfoPage';
-import { FoodBeveragePage } from './FoodBeveragePage';
-import { SpaWellnessPage } from './SpaWellnessPage';
-import { EntertainmentPage } from './EntertainmentPage';
-import { ContactPage } from './ContactPage';
-import { DailyOffersPage } from './DailyOffersPage';
+import { PageLoader } from '../../components/common/PageLoader';
+import { lazyWithRetry } from '../../utils/lazyWithRetry';
+
+const HotelInfoPage = lazyWithRetry(() =>
+  import('./HotelInfoPage').then((m) => ({ default: m.HotelInfoPage }))
+);
+const FoodBeveragePage = lazyWithRetry(() =>
+  import('./FoodBeveragePage').then((m) => ({ default: m.FoodBeveragePage }))
+);
+const SpaWellnessPage = lazyWithRetry(() =>
+  import('./SpaWellnessPage').then((m) => ({ default: m.SpaWellnessPage }))
+);
+const EntertainmentPage = lazyWithRetry(() =>
+  import('./EntertainmentPage').then((m) => ({ default: m.EntertainmentPage }))
+);
+const ContactPage = lazyWithRetry(() =>
+  import('./ContactPage').then((m) => ({ default: m.ContactPage }))
+);
+const DailyOffersPage = lazyWithRetry(() =>
+  import('./DailyOffersPage').then((m) => ({ default: m.DailyOffersPage }))
+);
 
 export const HubDispatcher: React.FC = () => {
   const { slug = 'altensor', code = '191' } = useParams<{ slug?: string; code?: string }>();
@@ -16,23 +31,22 @@ export const HubDispatcher: React.FC = () => {
 
   // Fast-path known static hub codes for altensor / skyhill reference
   if (slug === 'altensor' || slug === 'skyhill') {
+    let target: React.ReactNode = null;
     if (normalizedCode === '191' || normalizedCode === 'info') {
-      return <HotelInfoPage />;
+      target = <HotelInfoPage />;
+    } else if (normalizedCode === '192' || normalizedCode === 'food') {
+      target = <FoodBeveragePage />;
+    } else if (normalizedCode === '193' || normalizedCode === 'spa') {
+      target = <SpaWellnessPage />;
+    } else if (normalizedCode === '194' || normalizedCode === 'entertainment') {
+      target = <EntertainmentPage />;
+    } else if (normalizedCode === '195' || normalizedCode === 'contacts' || normalizedCode === 'contact') {
+      target = <ContactPage />;
+    } else if (normalizedCode === '196' || normalizedCode === 'specials' || normalizedCode === 'offers') {
+      target = <DailyOffersPage />;
     }
-    if (normalizedCode === '192' || normalizedCode === 'food') {
-      return <FoodBeveragePage />;
-    }
-    if (normalizedCode === '193' || normalizedCode === 'spa') {
-      return <SpaWellnessPage />;
-    }
-    if (normalizedCode === '194' || normalizedCode === 'entertainment') {
-      return <EntertainmentPage />;
-    }
-    if (normalizedCode === '195' || normalizedCode === 'contacts' || normalizedCode === 'contact') {
-      return <ContactPage />;
-    }
-    if (normalizedCode === '196' || normalizedCode === 'specials' || normalizedCode === 'offers') {
-      return <DailyOffersPage />;
+    if (target) {
+      return <Suspense fallback={<PageLoader />}>{target}</Suspense>;
     }
   }
 
@@ -40,30 +54,35 @@ export const HubDispatcher: React.FC = () => {
   const { data: hub, isLoading } = useHub(slug, code);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#A78BFA] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (hub) {
+    let hubComponent: React.ReactNode;
     switch (hub.hubType) {
       case HubType.HotelInfo:
-        return <HotelInfoPage />;
+        hubComponent = <HotelInfoPage />;
+        break;
       case HubType.FoodAndBeverage:
-        return <FoodBeveragePage />;
+        hubComponent = <FoodBeveragePage />;
+        break;
       case HubType.SpaAndWellness:
-        return <SpaWellnessPage />;
+        hubComponent = <SpaWellnessPage />;
+        break;
       case HubType.Entertainment:
-        return <EntertainmentPage />;
+        hubComponent = <EntertainmentPage />;
+        break;
       case HubType.Contacts:
-        return <ContactPage />;
+        hubComponent = <ContactPage />;
+        break;
       case HubType.DailySpecials:
-        return <DailyOffersPage />;
+        hubComponent = <DailyOffersPage />;
+        break;
       default:
-        return <FoodBeveragePage />;
+        hubComponent = <FoodBeveragePage />;
+        break;
     }
+    return <Suspense fallback={<PageLoader />}>{hubComponent}</Suspense>;
   }
 
   // If hub is not found for this hotel, render clean empty message

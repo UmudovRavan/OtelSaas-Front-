@@ -19,11 +19,10 @@ import { CatalogManagementTab } from './components/CatalogManagementTab';
 import { StoriesManagementTab } from './components/StoriesManagementTab';
 import { DepartmentsTab } from './components/DepartmentsTab';
 import { NotificationsTab } from './components/NotificationsTab';
+import { resolveMediaUrl } from '../../utils/media';
 
-const DEFAULT_COVER =
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
-const DEFAULT_LOGO =
-  'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=200&q=80';
+const DEFAULT_COVER = resolveMediaUrl('/media/guest/hero.webp');
+const DEFAULT_LOGO = resolveMediaUrl('/altensor-logo.png');
 
 export const AdminPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -41,20 +40,20 @@ export const AdminPage: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Hotel Profile State (Matched with HotelProfileDto & UpdateHotelProfileDto)
-  const [hotelSlug, setHotelSlug] = useState(querySlug || user?.tenantSlug || 'hotel-resort');
-  const [hotelName, setHotelName] = useState(user?.tenantName || 'Hotel & Resort Baku');
-  const [bioAz, setBioAz] = useState('Lüks istirahət və 5 ulduzlu otel xidmətləri.');
-  const [bioEn, setBioEn] = useState('Luxury stay and 5-star hotel services.');
-  const [bioRu, setBioRu] = useState('Роскошный отдых и 5-звездочный гостиничный сервис.');
+  const [hotelSlug, setHotelSlug] = useState(querySlug || user?.tenantSlug || 'altensor');
+  const [hotelName, setHotelName] = useState(user?.tenantName || 'Altensor Otel');
+  const [bioAz, setBioAz] = useState('Lənkəranın füsunkar təbiətində lüks istirahət və 5 ulduzlu otel xidmətləri.');
+  const [bioEn, setBioEn] = useState('Luxury stay and 5-star hotel services in Lankaran.');
+  const [bioRu, setBioRu] = useState('Роскошный отдых и 5-звездочный гостиничный сервис в Ленкорани.');
   const [defaultLanguage, setDefaultLanguage] = useState<'az' | 'en' | 'ru'>('az');
   const [primaryColor, setPrimaryColor] = useState('#A78BFA');
   const [themeMode, setThemeMode] = useState<number>(2);
-  const [hotelPhone, setHotelPhone] = useState('+994 12 599 00 00');
-  const [hotelEmail, setHotelEmail] = useState('info@hotelresort.az');
-  const [hotelWhatsapp, setHotelWhatsapp] = useState('994501234567');
-  const [hotelTelegram, setHotelTelegram] = useState('@hotelresort');
-  const [hotelAddress, setHotelAddress] = useState('Bakı şəhəri, Neftçilər prospekti');
-  const [hotelMapUrl, setHotelMapUrl] = useState('https://maps.google.com/?q=Baku');
+  const [hotelPhone, setHotelPhone] = useState('+994 25 255 12 34');
+  const [hotelEmail, setHotelEmail] = useState('info@altensor.az');
+  const [hotelWhatsapp, setHotelWhatsapp] = useState('994505551234');
+  const [hotelTelegram, setHotelTelegram] = useState('@altensor_bot');
+  const [hotelAddress, setHotelAddress] = useState('Heydər Əliyev prospekti, Lənkəran, Azərbaycan');
+  const [hotelMapUrl, setHotelMapUrl] = useState('https://maps.google.com/?q=Lankaran%2C+Azerbaijan');
   const [coverImage, setCoverImage] = useState(DEFAULT_COVER);
   const [logoImage, setLogoImage] = useState(DEFAULT_LOGO);
   const [isHotelActive, setIsHotelActive] = useState(true);
@@ -508,7 +507,17 @@ export const AdminPage: React.FC = () => {
             {/* Live Cover Banner & Logo Preview with Click-to-Upload Overlays */}
             <div className="relative rounded-[24px] overflow-hidden border border-[var(--border-color)]">
               <div className="relative h-52 w-full overflow-hidden bg-slate-900 group">
-                <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+                <img
+                  src={coverImage}
+                  alt="Cover"
+                  onError={(e) => {
+                    if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== DEFAULT_COVER) {
+                      e.currentTarget.dataset.fbApplied = '1';
+                      e.currentTarget.src = DEFAULT_COVER;
+                    }
+                  }}
+                  className="w-full h-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
                 <button
                   type="button"
@@ -526,7 +535,17 @@ export const AdminPage: React.FC = () => {
                     title="Loqonu dəyişmək üçün klikləyin"
                     className="relative w-20 h-20 rounded-[20px] overflow-hidden border-2 border-white/20 shadow-xl bg-[var(--bg-card)] cursor-pointer group"
                   >
-                    <img src={logoImage} alt="Logo" className="w-full h-full object-cover" />
+                    <img
+                      src={logoImage}
+                      alt="Logo"
+                      onError={(e) => {
+                        if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== DEFAULT_LOGO) {
+                          e.currentTarget.dataset.fbApplied = '1';
+                          e.currentTarget.src = DEFAULT_LOGO;
+                        }
+                      }}
+                      className="w-full h-full object-cover"
+                    />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-bold text-white text-center p-1">
                       {isUploadingLogo ? '...' : 'Loqonu Dəyiş'}
                     </div>
@@ -634,7 +653,7 @@ export const AdminPage: React.FC = () => {
                   type="text"
                   value={hotelTelegram}
                   onChange={(e) => setHotelTelegram(e.target.value)}
-                  placeholder="@hotelresort"
+                  placeholder="@altensor_bot"
                   className="w-full rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] px-4 py-3 text-xs text-[var(--text-main)] focus:border-[#A78BFA] outline-none"
                 />
               </div>

@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://31.57.77.199:5055';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-modi.altensor.com';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

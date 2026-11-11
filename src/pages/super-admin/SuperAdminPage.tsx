@@ -5,6 +5,7 @@ import { IOSIcon } from '../../components/common/IOSIcon';
 import altensorLogo from '../../assets/images/altensor-logo.png';
 import { superAdminService, TenantItem, SuperAdminDashboardData } from '../../services/api/superAdminService';
 import { API_BASE_URL } from '../../services/api/client';
+import { resolveMediaUrl } from '../../utils/media';
 
 export interface HotelTenant {
   id: string;
@@ -316,8 +317,7 @@ export const SuperAdminPage: React.FC = () => {
 
   const resolveImageUrl = (url?: string | null) => {
     if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+    return resolveMediaUrl(url);
   };
 
   return (

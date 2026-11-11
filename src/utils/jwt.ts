@@ -55,7 +55,7 @@ export function parseJwt(token: string): DecodedTokenPayload | null {
 /**
  * Helper to generate valid Base64 JWT format for client test sessions
  */
-export function createMockJwt(email: string, role: UserRole, tenantSlug = 'hotel-resort'): string {
+export function createMockJwt(email: string, role: UserRole, tenantSlug = 'altensor'): string {
   const header = window.btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = window.btoa(
     JSON.stringify({

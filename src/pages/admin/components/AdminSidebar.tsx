@@ -115,6 +115,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <img
                 src={logoImage}
                 alt={hotelName}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
                 className="w-10 h-10 rounded-2xl object-cover border border-[var(--border-color)] shadow-sm bg-[var(--bg-subcard)]"
               />
             ) : (

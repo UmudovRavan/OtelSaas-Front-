@@ -89,7 +89,7 @@ export const GuestPortalPage: React.FC = () => {
   const displayTagline = tr(portalData?.taglineTr, portalData?.tagline || (isDemoHotel ? 'Hotel & Resort' : ''), selectedLang as SupportedLang);
   const displayHotelBio = tr(portalData?.bioTr, portalData?.bio || (isDemoHotel ? t.hotelDescription : ''), selectedLang as SupportedLang);
   const displayCoverImage = resolveMediaUrl(portalData?.coverImageUrl, '/media/guest/hero.webp');
-  const displayLogo = portalData?.logoUrl ? resolveMediaUrl(portalData.logoUrl, '') : (isDemoHotel ? hotel.logo : '');
+  const displayLogo = portalData?.logoUrl ? resolveMediaUrl(portalData.logoUrl, hotel.logo) : (isDemoHotel ? resolveMediaUrl(hotel.logo) : '');
   const displayPhone = portalData?.phone || (isDemoHotel ? hotel.phone : '');
   const displayWhatsapp = (portalData?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
   const starCount = portalData?.starRating || 5;
@@ -539,8 +539,10 @@ export const GuestPortalPage: React.FC = () => {
             src={displayCoverImage}
             alt={displayHotelName}
             onError={(e) => {
-              if (e.currentTarget.src !== '/media/guest/hero.webp') {
-                e.currentTarget.src = '/media/guest/hero.webp';
+              const fallback = resolveMediaUrl('/media/guest/hero.webp');
+              if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                e.currentTarget.dataset.fbApplied = '1';
+                e.currentTarget.src = fallback;
               }
             }}
             className="absolute inset-0 w-full h-full object-cover"
@@ -642,7 +644,13 @@ export const GuestPortalPage: React.FC = () => {
                   src={displayLogo}
                   alt={displayHotelName}
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                    const fallback = resolveMediaUrl(hotel.logo);
+                    if (!e.currentTarget.dataset.fbApplied && fallback && e.currentTarget.src !== fallback) {
+                      e.currentTarget.dataset.fbApplied = '1';
+                      e.currentTarget.src = fallback;
+                    } else {
+                      e.currentTarget.style.display = 'none';
+                    }
                   }}
                   className="w-12 h-12 rounded-xl object-cover border border-white/25 shadow-lg mb-1"
                 />
@@ -728,8 +736,15 @@ export const GuestPortalPage: React.FC = () => {
                     }}
                   >
                     <img
-                      src={story.image}
+                      src={resolveMediaUrl(story.image, '/media/guest/story-welcome-poster.webp')}
                       alt={story.title}
+                      onError={(e) => {
+                        const fallback = resolveMediaUrl('/media/guest/story-welcome-poster.webp');
+                        if (!e.currentTarget.dataset.fbApplied) {
+                          e.currentTarget.dataset.fbApplied = '1';
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
                       className="w-full h-full rounded-full object-cover border-[2.5px] border-[var(--bg-main)] bg-[var(--bg-card)]"
                     />
                     {story.hasPlayBadge && (
@@ -796,8 +811,15 @@ export const GuestPortalPage: React.FC = () => {
                   className="relative aspect-[4/3.05] sm:aspect-[16/9.5] rounded-[13px] overflow-hidden text-white bg-[#211E30] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07),0_6px_16px_rgba(0,0,0,0.22)] active:scale-[0.98] transition-transform group focus:outline-none"
                 >
                   <img
-                    src={card.image}
+                    src={resolveMediaUrl(card.image, '/media/guest/tile-hotel.webp')}
                     alt={card.title}
+                    onError={(e) => {
+                      const fallback = resolveMediaUrl('/media/guest/tile-hotel.webp');
+                      if (!e.currentTarget.dataset.fbApplied) {
+                        e.currentTarget.dataset.fbApplied = '1';
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   {/* Exact Overlay from .hotel_tile__VzlHJ:has(img):after */}
@@ -863,7 +885,7 @@ export const GuestPortalPage: React.FC = () => {
             className="relative min-h-[108px] rounded-[14px] overflow-hidden text-white bg-[#211E30] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07),0_6px_16px_rgba(0,0,0,0.22)] flex active:scale-[0.98] transition-transform group focus:outline-none"
           >
             <img
-              src="/media/guest/review-banner.webp"
+              src={resolveMediaUrl('/media/guest/review-banner.webp')}
               alt="Rəy bildirin"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -1081,7 +1103,7 @@ export const GuestPortalPage: React.FC = () => {
                   />
                 ) : (
                   <img
-                    src={activeStory.bannerImageUrl || activeStory.image}
+                    src={resolveMediaUrl(activeStory.bannerImageUrl || activeStory.image, '/media/guest/story-welcome-poster.webp')}
                     alt={activeStory.title}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
@@ -1112,8 +1134,10 @@ export const GuestPortalPage: React.FC = () => {
                         src={displayLogo}
                         alt={displayHotelName}
                         onError={(e) => {
-                          if (e.currentTarget.src !== hotel.logo) {
-                            e.currentTarget.src = hotel.logo;
+                          const fallback = resolveMediaUrl(hotel.logo);
+                          if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                            e.currentTarget.dataset.fbApplied = '1';
+                            e.currentTarget.src = fallback;
                           }
                         }}
                         className="w-9 h-9 rounded-full object-cover border border-[#A78BFA]"
@@ -1543,7 +1567,7 @@ export const GuestPortalPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="rounded-2xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-subcard)]">
                       <img
-                        src="/media/guest/chef-special.webp"
+                        src={resolveMediaUrl('/media/guest/chef-special.webp')}
                         alt="Günün təklifi"
                         className="w-full h-36 object-cover"
                       />

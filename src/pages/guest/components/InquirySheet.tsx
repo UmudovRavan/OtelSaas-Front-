@@ -11,7 +11,7 @@ interface InquirySheetProps {
   slug?: string;
 }
 
-export const InquirySheet: React.FC<InquirySheetProps> = ({ isOpen, onClose, t, slug = 'hotel-resort' }) => {
+export const InquirySheet: React.FC<InquirySheetProps> = ({ isOpen, onClose, t, slug = 'altensor' }) => {
   const [fullName, setFullName] = useState('');
   const [roomNumber, setRoomNumber] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');

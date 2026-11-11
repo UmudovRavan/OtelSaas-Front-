@@ -1,4 +1,5 @@
 import { apiClient, ApiResponse, API_BASE_URL } from './client';
+import { resolveMediaUrl } from '../../utils/media';
 
 export interface HotelAdminProfile {
   id: string;
@@ -138,11 +139,7 @@ function getTenantQueryParam(overrideTenantId?: string | null): Record<string, s
 }
 
 export function resolveBackendMediaUrl(url?: string | null): string {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
-    return url;
-  }
-  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  return resolveMediaUrl(url);
 }
 
 export const hotelAdminService = {
@@ -329,11 +326,11 @@ export const hotelAdminService = {
     return response.data.success;
   },
 
-  getQrPngUrl(slug = 'hotel-resort'): string {
+  getQrPngUrl(slug = 'altensor'): string {
     return `${API_BASE_URL}/api/public/${slug}/qr/png`;
   },
 
-  getQrSvgUrl(slug = 'hotel-resort'): string {
+  getQrSvgUrl(slug = 'altensor'): string {
     return `${API_BASE_URL}/api/public/${slug}/qr/svg`;
   },
 };

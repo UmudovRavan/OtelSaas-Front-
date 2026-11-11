@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { findFoodItemById, FoodBeverageItem, VenueCategory } from '../data/foodBeverageData';
 import { getOfferByIdOrCode } from '../data/dailyOffersData';
 import { useFullCatalog } from '../hooks/useHotelData';
+import { resolveMediaUrl } from '../utils/media';
 
 export interface DetailedCartItem {
   item: FoodBeverageItem;
@@ -123,7 +124,7 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               price: `${realProduct.price} ₼`,
               priceNum: realProduct.price,
               badge: realProduct.qrBadge?.az || undefined,
-              image: realProduct.image || undefined,
+              image: realProduct.image ? resolveMediaUrl(realProduct.image) : undefined,
               desc: realProduct.ingredient || undefined,
             },
             venue: {
@@ -131,7 +132,7 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               code: String(cat?.externalId || realProduct.categoryId),
               title: cat?.title || realProduct.categoryName || 'Restoran',
               subtitle: cat?.subtitle || '',
-              cover: cat?.imageUrl || realProduct.image || '',
+              cover: resolveMediaUrl(cat?.imageUrl || realProduct.image, '/media/guest/restaurant-table.webp'),
               hours: cat?.workingHours || '08:00–23:00',
               type: 'restaurant',
               items: [],
@@ -166,7 +167,7 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 price: offerFound.price,
                 priceNum: offerFound.priceNum,
                 badge: offerFound.badge,
-                image: offerFound.image,
+                image: resolveMediaUrl(offerFound.image, '/media/guest/chef-special.webp'),
                 desc: offerFound.ingredients,
               },
               venue: {
@@ -174,7 +175,7 @@ export const GuestCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 code: '4598',
                 title: 'Günün təklifləri',
                 subtitle: offerFound.subtitle,
-                cover: offerFound.image,
+                cover: resolveMediaUrl(offerFound.image, '/media/guest/chef-special.webp'),
                 hours: 'Bütün gün',
                 type: 'restaurant',
                 items: [],

@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithCredentials = (email: string, role: UserRole, tenantSlug = 'hotel-resort') => {
+  const loginWithCredentials = (email: string, role: UserRole, tenantSlug = 'altensor') => {
     // Fallback generator for offline/demo tests
     const jwtToken = createMockJwt(email, role, tenantSlug);
     loginWithToken(jwtToken, { role, tenantSlug });

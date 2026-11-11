@@ -134,7 +134,7 @@ export const EntertainmentPage: React.FC = () => {
         {/* ===================== 1. HERO HEADER (1:1 with Reference) ===================== */}
         <header className="relative w-full h-[178px] overflow-hidden bg-[#181424] flex-none">
           <img
-            src={hubCover}
+            src={resolveMediaUrl(hubCover, '/media/guest/tile-entertainment.webp')}
             alt={hubTitle}
             className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
           />
@@ -229,7 +229,7 @@ export const EntertainmentPage: React.FC = () => {
                     {/* Thumbnail 84x64px */}
                     <div className="w-[84px] h-[64px] sm:w-[92px] sm:h-[68px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/30">
                       <img
-                        src={item.image}
+                        src={resolveMediaUrl(item.image, '/media/guest/tile-entertainment.webp')}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
@@ -348,7 +348,7 @@ export const EntertainmentPage: React.FC = () => {
                 {activeItem.image && (
                   <div className="w-full h-[180px] rounded-2xl overflow-hidden bg-black/30">
                     <img
-                      src={activeItem.image}
+                      src={resolveMediaUrl(activeItem.image, '/media/guest/tile-entertainment.webp')}
                       alt={activeItem.title}
                       className="w-full h-full object-cover"
                     />

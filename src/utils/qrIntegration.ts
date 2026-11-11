@@ -155,7 +155,7 @@ export const downloadHotelQr = async (
 export const printQrTableStand = async (
   hotelName: string,
   svgMarkupOrSlug: string,
-  hotelSlug = 'hotel-resort',
+  hotelSlug = 'altensor',
   tenantId?: string | null
 ): Promise<void> => {
   let finalSvgMarkup = svgMarkupOrSlug ? normalizeQrSvg(svgMarkupOrSlug) : '';

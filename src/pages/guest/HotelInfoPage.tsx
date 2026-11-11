@@ -223,8 +223,8 @@ export const HotelInfoPage: React.FC = () => {
           <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
         </svg>
       ),
-      contentAz: `Bizimlə 24 saat əlaqə saxlaya bilərsiniz:\n\n• Qəbul şöbəsi (Resepşn): ${displayPhone}\n• Daxili nömrə: 0 (otaq telefonundan)\n• WhatsApp Dəstək: +${displayWhatsapp}\n• E-poçt: ${liveHotel?.email || 'info@hotelresort.az'}`,
-      contentEn: `Contact us 24/7:\n\n• Front Desk: ${displayPhone}\n• Room Phone: Dial 0\n• WhatsApp: +${displayWhatsapp}\n• Email: ${liveHotel?.email || 'info@hotelresort.az'}`,
+      contentAz: `Bizimlə 24 saat əlaqə saxlaya bilərsiniz:\n\n• Qəbul şöbəsi (Resepşn): ${displayPhone}\n• Daxili nömrə: 0 (otaq telefonundan)\n• WhatsApp Dəstək: +${displayWhatsapp}\n• E-poçt: ${liveHotel?.email || 'info@altensor.az'}`,
+      contentEn: `Contact us 24/7:\n\n• Front Desk: ${displayPhone}\n• Room Phone: Dial 0\n• WhatsApp: +${displayWhatsapp}\n• Email: ${liveHotel?.email || 'info@altensor.az'}`,
       contentRu: `Свяжитесь с нами 24/7:\n\n• Ресепшн: ${displayPhone}\n• С номера отеля: наберите 0\n• WhatsApp: +${displayWhatsapp}`,
     },
     {
@@ -260,8 +260,10 @@ export const HotelInfoPage: React.FC = () => {
             src={displayCoverImage}
             alt={displayHotelName}
             onError={(e) => {
-              if (e.currentTarget.src !== '/media/guest/tile-hotel.webp') {
-                e.currentTarget.src = '/media/guest/tile-hotel.webp';
+              const fallback = resolveMediaUrl('/media/guest/tile-hotel.webp');
+              if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                e.currentTarget.dataset.fbApplied = '1';
+                e.currentTarget.src = fallback;
               }
             }}
             className="absolute inset-0 w-full h-full object-cover"

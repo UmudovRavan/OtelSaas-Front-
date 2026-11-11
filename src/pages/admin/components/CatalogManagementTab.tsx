@@ -352,6 +352,13 @@ export const CatalogManagementTab: React.FC<Props> = ({
                   <img
                     src={resolveMediaUrl(hub.coverImageUrl, '/media/guest/tile-hotel.webp')}
                     alt={hub.titleAz || hub.title}
+                    onError={(e) => {
+                      const fallback = resolveMediaUrl('/media/guest/tile-hotel.webp');
+                      if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                        e.currentTarget.dataset.fbApplied = '1';
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md text-white font-mono text-[10px]">
@@ -451,6 +458,13 @@ export const CatalogManagementTab: React.FC<Props> = ({
                   <img
                     src={resolveMediaUrl(cat.imageUrl, '/media/guest/restaurant-table.webp')}
                     alt={cat.titleAz || cat.title}
+                    onError={(e) => {
+                      const fallback = resolveMediaUrl('/media/guest/restaurant-table.webp');
+                      if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                        e.currentTarget.dataset.fbApplied = '1';
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md text-white font-mono text-[10px]">
@@ -587,8 +601,15 @@ export const CatalogManagementTab: React.FC<Props> = ({
                 <div className="flex gap-3">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[var(--bg-subcard)] flex-shrink-0">
                     <img
-                      src={resolveMediaUrl(item.imageUrl, '/media/guest/dish-placeholder.webp')}
+                      src={resolveMediaUrl(item.imageUrl, '/media/guest/plate.webp')}
                       alt={item.titleAz || item.title}
+                      onError={(e) => {
+                        const fallback = resolveMediaUrl('/media/guest/plate.webp');
+                        if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                          e.currentTarget.dataset.fbApplied = '1';
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
                       className="w-full h-full object-cover"
                     />
                   </div>
