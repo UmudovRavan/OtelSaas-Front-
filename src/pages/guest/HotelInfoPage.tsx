@@ -7,6 +7,10 @@ import { publicService, PublicHotelProfile } from '../../services/api/publicServ
 import { resolveBackendMediaUrl } from '../../services/api/hotelAdminService';
 import { useHub, useHotelPortal } from '../../hooks/useHotelData';
 import { resolveMediaUrl } from '../../utils/media';
+import { useGuestDocumentMeta } from '../../utils/documentHead';
+import { useLanguage } from '../../context/LanguageContext';
+import { tr, SupportedLang } from '../../utils/i18n';
+import { GuestLangPill } from './components/GuestLangPill';
 import { HubType } from '../../types/api';
 import { InquirySheet } from './components/InquirySheet';
 import { WifiModal } from './components/WifiModal';
@@ -29,20 +33,26 @@ export const HotelInfoPage: React.FC = () => {
   const isDemoHotel = hotelSlug === 'altensor' || hotelSlug === 'skyhill' || hotelSlug === 'hotel-resort';
   const navigate = useNavigate();
 
-  const [selectedLang, setSelectedLang] = useState<Language>('az');
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const { currentLang } = useLanguage();
+  const selectedLang = (currentLang as Language) || 'az';
   const [liveHotel, setLiveHotel] = useState<PublicHotelProfile | null>(null);
   const [activeItem, setActiveItem] = useState<InfoItemDetail | null>(null);
   const [isWifiOpen, setIsWifiOpen] = useState(false);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const saved = localStorage.getItem('fs_guest_dark');
+    document.documentElement.classList.toggle('fs-dark', saved === '1');
+  }, []);
 
   const isHubRoute = window.location.pathname.includes('/g/');
 
   const { data: portalData } = useHotelPortal(hotelSlug);
   const matchingInfoHub = portalData?.hubs?.find((h) => h.hubType === HubType.HotelInfo);
   const hubCodeOrId = isHubRoute
-    ? (code || matchingInfoHub?.code || matchingInfoHub?.externalId || '191')
-    : (matchingInfoHub?.code || matchingInfoHub?.externalId || '191');
+    ? code || matchingInfoHub?.code || matchingInfoHub?.externalId || '191'
+    : matchingInfoHub?.code || matchingInfoHub?.externalId || '191';
 
   // Dynamic Live Hub (Hotel Info)
   const { data: hubData } = useHub(hotelSlug, hubCodeOrId);
@@ -61,23 +71,13 @@ export const HotelInfoPage: React.FC = () => {
       });
   }, [hotelSlug, selectedLang]);
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-    }
-  }, [isDarkMode]);
-
   const displayHotelName =
-    hubData?.title ||
-    hubData?.titleTr?.az ||
+    tr(hubData?.titleTr, hubData?.title || '', selectedLang as SupportedLang) ||
     liveHotel?.name ||
     (isDemoHotel ? t.hotelName : 'Otel');
   const displayHotelBio =
-    hubData?.subtitle ||
-    hubData?.subtitleTr?.az ||
-    liveHotel?.bio ||
+    tr(hubData?.subtitleTr, hubData?.subtitle || '', selectedLang as SupportedLang) ||
+    tr(liveHotel?.bioTr, liveHotel?.bio || '', selectedLang as SupportedLang) ||
     (isDemoHotel ? t.hotelDescription : '');
   const displayCoverImage = resolveMediaUrl(
     hubData?.coverImageUrl,
@@ -88,7 +88,13 @@ export const HotelInfoPage: React.FC = () => {
 
   const homePath = slug ? `/hotel/${slug}` : '/';
 
-  // 9 Exact Items matching reference 1:1
+  const infoTabLabel =
+    selectedLang === 'az' ? 'Otel məlumatı' : selectedLang === 'ru' ? 'Информация об отеле' : 'Hotel Information';
+  useGuestDocumentMeta(
+    `${infoTabLabel} | ${displayHotelName}`,
+    liveHotel?.logoUrl || portalData?.logoUrl || (isDemoHotel ? hotel.logo : undefined)
+  );
+
   const infoItems: InfoItemDetail[] = [
     {
       id: 'welcome',
@@ -96,7 +102,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: `Welcome to ${displayHotelName}`,
       titleRu: `Добро пожаловать в ${displayHotelName}`,
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
           <path d="M20 2v4" />
           <path d="M22 4h-4" />
@@ -113,7 +119,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: `About ${displayHotelName} 5★`,
       titleRu: `Об отеле ${displayHotelName} 5★`,
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M10 22v-6.57" />
           <path d="M12 11h.01" />
           <path d="M12 7h.01" />
@@ -136,7 +142,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: 'Rooms & Suites',
       titleRu: 'Номера и люксы',
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8" />
           <path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4" />
           <path d="M12 4v6" />
@@ -153,7 +159,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: 'Hotel Facilities',
       titleRu: 'Удобства отеля',
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M10.268 21a2 2 0 0 0 3.464 0" />
           <path d="M22 8c0-2.3-.8-4.3-2-6" />
           <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
@@ -170,7 +176,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: 'Guest Directory A–Z',
       titleRu: 'Справочник гостя A–Я',
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 5v16" />
           <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" />
         </svg>
@@ -185,7 +191,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: 'Hotel Policies',
       titleRu: 'Правила отеля',
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
           <path d="M14 2v5a1 1 0 0 0 1 1h5" />
           <path d="M10 9H8" />
@@ -203,7 +209,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: 'Location & Directions',
       titleRu: 'Адрес и как добраться',
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
           <circle cx="12" cy="10" r="3" />
         </svg>
@@ -219,7 +225,7 @@ export const HotelInfoPage: React.FC = () => {
       titleRu: 'Связаться с нами',
       isTel: true,
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
         </svg>
       ),
@@ -233,7 +239,7 @@ export const HotelInfoPage: React.FC = () => {
       titleEn: 'Special Offers',
       titleRu: 'Специальные предложения',
       iconSvg: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
         </svg>
       ),
@@ -252,271 +258,226 @@ export const HotelInfoPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-hotel-sans flex justify-center selection:bg-[#A78BFA] selection:text-black transition-colors duration-200">
-      <div className="w-full max-w-[540px] min-h-screen bg-[var(--bg-main)] flex flex-col relative pb-8 border-x border-[var(--border-color)] overflow-x-hidden shadow-2xl">
-        {/* ===================== 1. EXACT HEADER (.hotel_head__vmWxV .hotel_headPlain__52ybX) ===================== */}
-        <header className="relative w-full h-[178px] overflow-hidden bg-[#1e1b2e] flex-none">
-          <img
-            src={displayCoverImage}
-            alt={displayHotelName}
-            onError={(e) => {
-              const fallback = resolveMediaUrl('/media/guest/tile-hotel.webp');
-              if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
-                e.currentTarget.dataset.fbApplied = '1';
-                e.currentTarget.src = fallback;
-              }
-            }}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+    <div className="fs-portal min-h-screen flex flex-col selection:bg-black selection:text-white pb-16">
+      {/* ===================== 1. FULL-BLEED ARCHITECTURAL HERO ===================== */}
+      <header className="relative w-full h-[240px] sm:h-[320px] lg:h-[380px] overflow-hidden bg-[#0F0F0F] flex-none">
+        <img
+          src={displayCoverImage}
+          alt={displayHotelName}
+          onError={(e) => {
+            const fallback = resolveMediaUrl('/media/guest/tile-hotel.webp');
+            if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+              e.currentTarget.dataset.fbApplied = '1';
+              e.currentTarget.src = fallback;
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-          {/* Exact Shade from reference */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(10,8,6,.42), rgba(10,8,6,0) 32%, rgba(10,8,6,.08) 52%, rgba(10,8,6,.72))',
-            }}
-          />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.16) 45%, rgba(0,0,0,0.78) 100%)',
+          }}
+        />
 
-          {/* Top Back Button (<) */}
+        <div className="relative z-20 max-w-[1280px] mx-auto px-4 sm:px-8 pt-4 flex items-center justify-between">
           <button
             type="button"
             aria-label="Geri"
             onClick={() => navigate(homePath)}
-            className="absolute top-[10px] left-[10px] z-10 w-[40px] height-[40px] h-[40px] rounded-full flex items-center justify-center text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.55)] active:scale-90 transition-transform"
+            className="w-10 h-10 bg-black/40 border border-white/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="m15 18-6-6 6-6" />
             </svg>
           </button>
 
-          {/* Top Home Button */}
-          <button
-            type="button"
-            aria-label="Əsas səhifə"
-            onClick={() => navigate(homePath)}
-            className="absolute top-[10px] right-[10px] z-10 w-[40px] h-[40px] rounded-full flex items-center justify-center text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.55)] active:scale-90 transition-transform"
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="flex items-center gap-2">
+            <GuestLangPill />
+            <button
+              type="button"
+              aria-label="Əsas səhifə"
+              onClick={() => navigate(homePath)}
+              className="w-10 h-10 bg-black/40 border border-white/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors"
             >
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          </button>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
-          {/* Page Title at Bottom-Left (.hotel_headTitle__CllxS) */}
-          <h1
-            className="absolute left-[20px] right-[18px] bottom-[14px] z-10 font-hotel-serif font-bold text-[32px] sm:text-[34px] leading-[1.05] tracking-[0.005em] text-white"
-            style={{ textShadow: '0 2px 12px rgba(0,0,0,.5)' }}
-          >
+        <div className="absolute inset-x-0 bottom-0 z-20 max-w-[1140px] mx-auto px-4 sm:px-8 pb-6 sm:pb-9">
+          <p className="fs-eyebrow text-[16px] sm:text-[18px] text-white/85 mb-1">
+            {displayHotelName}
+          </p>
+          <h1 className="font-fs-sans font-extralight text-[26px] sm:text-[34px] lg:text-[40px] leading-[1.2] tracking-[0.18em] uppercase text-white">
             {selectedLang === 'az'
               ? 'Otel məlumatı'
               : selectedLang === 'ru'
               ? 'Информация об отеле'
               : 'Hotel Information'}
           </h1>
-        </header>
+        </div>
+      </header>
 
-        {/* ===================== 2. EXACT WHITE / SURFACE SHEET WITH 9 ROWS ===================== */}
-        <div className="relative z-10 -mt-[20px] pt-[12px] px-[12px] bg-[var(--bg-main)] rounded-t-[20px] flex-1">
-          {/* List Card Container (.hotel_listPlain__Eiur0) */}
-          <div className="rounded-[14px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_14px_rgba(0,0,0,0.05)] overflow-hidden divide-y divide-[var(--border-color)]">
-            {infoItems.map((item) => {
-              const title =
-                selectedLang === 'az'
-                  ? item.titleAz
-                  : selectedLang === 'ru'
-                  ? item.titleRu
-                  : item.titleEn;
+      {/* ===================== 2. PROPERTY DIRECTORY GRID ===================== */}
+      <main className="flex-1 w-full max-w-[1140px] mx-auto px-4 sm:px-8 py-8 sm:py-14 space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[var(--fs-border)] border border-[var(--fs-border)]">
+          {infoItems.map((item) => {
+            const title =
+              selectedLang === 'az'
+                ? item.titleAz
+                : selectedLang === 'ru'
+                ? item.titleRu
+                : item.titleEn;
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleRowClick(item)}
-                  className="w-full min-h-[60px] py-[12px] pl-[18px] pr-[12px] flex items-center justify-between text-left text-[var(--text-main)] hover:bg-[var(--bg-subcard)]/60 active:bg-[var(--bg-subcard)] transition-colors group focus:outline-none"
-                >
-                  {/* Left Icon + Title */}
-                  <div className="flex items-center gap-[16px] min-w-0 flex-1">
-                    <span className="flex-none text-[#A78BFA] flex items-center justify-center transition-transform group-hover:scale-110">
-                      {item.iconSvg}
-                    </span>
-                    <span className="font-hotel-serif font-semibold text-[17.5px] leading-[1.2] text-[var(--text-main)] truncate">
-                      {title}
-                    </span>
-                  </div>
-
-                  {/* Right Chevron (.hotel_rowChevron__3hnHU) */}
-                  <span className="flex-none text-[var(--text-muted)] flex items-center ml-2 group-hover:translate-x-0.5 transition-transform">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleRowClick(item)}
+                className="w-full min-h-[72px] py-5 px-5 sm:px-7 bg-[var(--fs-card)] hover:bg-[var(--fs-surface-subtle)] flex items-center justify-between text-left text-[var(--fs-text)] transition-colors group focus:outline-none"
+              >
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <span className="flex-none text-[var(--fs-text)] flex items-center justify-center">
+                    {item.iconSvg}
                   </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Quick Wi-Fi Pill at Bottom */}
-          <div className="mt-4 px-1">
-            <button
-              type="button"
-              onClick={() => setIsWifiOpen(true)}
-              className="w-full py-3 px-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between shadow-sm active:scale-[0.98] transition-transform"
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-[#A78BFA]/15 text-[#A78BFA] flex items-center justify-center">
-                  📶
-                </span>
-                <div className="text-left">
-                  <span className="text-xs font-bold text-[var(--text-main)] block">{t.wifiBanner.title}</span>
-                  <span className="text-[11px] text-[var(--text-muted)] block">
-                    {hotel.wifi.ssid} • Şifrə: {hotel.wifi.pass}
+                  <span className="font-fs-serif text-[19px] sm:text-[20px] leading-snug text-[var(--fs-text)] truncate">
+                    {title}
                   </span>
                 </div>
-              </div>
-              <span className="text-xs font-bold bg-[#A78BFA] text-black px-3 py-1 rounded-xl">
-                {t.wifiBanner.connectBtn}
-              </span>
-            </button>
-          </div>
+
+                <span className="flex-none text-[var(--fs-text-muted)] group-hover:text-[var(--fs-text)] group-hover:translate-x-1 transition-all ml-3">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* ===================== 3. DETAIL MODAL WHEN AN ITEM IS CLICKED ===================== */}
-        <AnimatePresence>
-          {activeItem && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/75 backdrop-blur-sm"
-                onClick={() => setActiveItem(null)}
-              />
+        {/* Complimentary Wi-Fi Strip */}
+        <div className="p-6 sm:p-8 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1">
+            <span className="fs-kicker text-[var(--fs-text-muted)] block">Connectivity</span>
+            <h3 className="font-fs-serif text-[21px] text-[var(--fs-text)]">{t.wifiBanner.title}</h3>
+            <p className="font-fs-serif text-[15px] text-[var(--fs-text-muted)]">
+              {hotel.wifi.ssid} • Şifrə: {hotel.wifi.pass}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsWifiOpen(true)}
+            className="fs-btn-primary shrink-0"
+          >
+            {t.wifiBanner.connectBtn}
+          </button>
+        </div>
+      </main>
 
-              <motion.div
-                initial={{ opacity: 0, y: 60 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 60 }}
-                transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-                className="relative z-10 w-full max-w-[480px] max-h-[85vh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 text-[var(--text-main)] shadow-2xl space-y-4"
-              >
-                <div className="w-12 h-1.5 rounded-full bg-white/20 mx-auto mb-1" />
+      {/* ===================== 3. DETAIL MODAL ===================== */}
+      <AnimatePresence>
+        {activeItem && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[var(--fs-backdrop)] backdrop-blur-[2px]"
+              onClick={() => setActiveItem(null)}
+            />
 
-                <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-9 h-9 rounded-xl bg-[#A78BFA]/20 text-[#A78BFA] flex items-center justify-center">
-                      {activeItem.iconSvg}
-                    </span>
-                    <h3 className="font-hotel-serif text-lg font-bold tracking-wide uppercase text-[var(--text-main)]">
-                      {selectedLang === 'az'
-                        ? activeItem.titleAz
-                        : selectedLang === 'ru'
-                        ? activeItem.titleRu
-                        : activeItem.titleEn}
-                    </h3>
-                  </div>
-
-                  <button
-                    onClick={() => setActiveItem(null)}
-                    className="w-8 h-8 rounded-full bg-[var(--bg-subcard)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs sm:text-[13px] text-[var(--text-main)]/90 leading-relaxed whitespace-pre-line font-hotel-sans">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative z-10 w-full max-w-[540px] max-h-[88vh] overflow-y-auto rounded-none bg-[var(--fs-card)] border-t sm:border border-[var(--fs-border)] p-6 sm:p-9 text-[var(--fs-text)] shadow-2xl space-y-5"
+            >
+              <div className="flex items-center justify-between border-b border-[var(--fs-border)] pb-4">
+                <div className="flex items-center gap-3 min-w-0 pr-3">
+                  <span className="w-9 h-9 border border-[var(--fs-border-strong)] text-[var(--fs-text)] flex items-center justify-center shrink-0">
+                    {activeItem.iconSvg}
+                  </span>
+                  <h3 className="font-fs-sans font-extralight text-[18px] sm:text-[20px] tracking-[0.15em] uppercase text-[var(--fs-text)] truncate">
                     {selectedLang === 'az'
-                      ? activeItem.contentAz
+                      ? activeItem.titleAz
                       : selectedLang === 'ru'
-                      ? activeItem.contentRu
-                      : activeItem.contentEn}
-                  </p>
+                      ? activeItem.titleRu
+                      : activeItem.titleEn}
+                  </h3>
                 </div>
 
-                {activeItem.id === 'location' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveItem(null)}
+                  className="w-8 h-8 border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] flex items-center justify-center text-[var(--fs-text-muted)] hover:text-[var(--fs-text)] shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="font-fs-serif text-[16px] sm:text-[17px] text-[var(--fs-text-body)] leading-[1.7] whitespace-pre-line">
+                {selectedLang === 'az'
+                  ? activeItem.contentAz
+                  : selectedLang === 'ru'
+                  ? activeItem.contentRu
+                  : activeItem.contentEn}
+              </p>
+
+              {activeItem.id === 'location' && (
+                <div className="pt-2">
                   <a
                     href={liveHotel?.mapUrl || 'https://maps.google.com/?q=Baku'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#A78BFA]/25 active:scale-95 transition-transform"
+                    className="fs-btn-primary w-full"
                   >
-                    📍 Google Maps-də Naviqasiya Aç
+                    Google Maps-də Naviqasiya Aç
                   </a>
-                )}
+                </div>
+              )}
 
-                {(activeItem.id === 'welcome' || activeItem.id === 'about' || activeItem.id === 'contact') && (
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <a
-                      href={`tel:${displayPhone}`}
-                      className="py-3 rounded-2xl bg-[#A78BFA] text-black text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
-                    >
-                      📞 Resepşna Zəng
-                    </a>
-                    <button
-                      onClick={() => {
-                        setActiveItem(null);
-                        setIsInquiryOpen(true);
-                      }}
-                      className="py-3 rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
-                    >
-                      🛎️ Xidmət İstəyi
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+              {(activeItem.id === 'welcome' || activeItem.id === 'about' || activeItem.id === 'contact') && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[var(--fs-border)]">
+                  <a href={`tel:${displayPhone}`} className="fs-btn-primary w-full">
+                    Resepşna Zəng
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveItem(null);
+                      setIsInquiryOpen(true);
+                    }}
+                    className="fs-btn-outline w-full"
+                  >
+                    Xidmət İstəyi
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-        {/* Wi-Fi Details Modal */}
-        <WifiModal
-          isOpen={isWifiOpen}
-          onClose={() => setIsWifiOpen(false)}
-          ssid={hotel.wifi.ssid}
-          pass={hotel.wifi.pass}
-          t={t.wifiModal}
-        />
+      <WifiModal
+        isOpen={isWifiOpen}
+        onClose={() => setIsWifiOpen(false)}
+        ssid={hotel.wifi.ssid}
+        pass={hotel.wifi.pass}
+        t={t.wifiModal}
+      />
 
-        {/* Inquiry Sheet */}
-        <InquirySheet
-          isOpen={isInquiryOpen}
-          onClose={() => setIsInquiryOpen(false)}
-          t={t.inquiry}
-          slug={hotelSlug}
-        />
-      </div>
+      <InquirySheet
+        isOpen={isInquiryOpen}
+        onClose={() => setIsInquiryOpen(false)}
+        t={t.inquiry}
+        slug={hotelSlug}
+      />
     </div>
   );
 };
-

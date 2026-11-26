@@ -13,6 +13,10 @@ import {
 import { InquirySheet } from './components/InquirySheet';
 import { useHub, useCatalogCategory, useHotelPortal } from '../../hooks/useHotelData';
 import { resolveMediaUrl } from '../../utils/media';
+import { useGuestDocumentMeta } from '../../utils/documentHead';
+import { useLanguage } from '../../context/LanguageContext';
+import { tr, SupportedLang } from '../../utils/i18n';
+import { GuestLangPill } from './components/GuestLangPill';
 import { HubType } from '../../types/api';
 
 export const SpaWellnessPage: React.FC = () => {
@@ -22,8 +26,15 @@ export const SpaWellnessPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [selectedLang] = useState<Language>('az');
+  const { currentLang } = useLanguage();
+  const selectedLang = (currentLang as Language) || 'az';
   const [liveHotel, setLiveHotel] = useState<PublicHotelProfile | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const saved = localStorage.getItem('fs_guest_dark');
+    document.documentElement.classList.toggle('fs-dark', saved === '1');
+  }, []);
 
   const isHubRoute = location.pathname.includes('/g/');
 
@@ -31,14 +42,18 @@ export const SpaWellnessPage: React.FC = () => {
   const { data: portalData } = useHotelPortal(hotelSlug);
   const matchingSpaHub = portalData?.hubs?.find((h) => h.hubType === HubType.SpaAndWellness);
   const hubCodeOrId = isHubRoute
-    ? (code || matchingSpaHub?.code || matchingSpaHub?.externalId || '193')
-    : (matchingSpaHub?.code || matchingSpaHub?.externalId || '193');
+    ? code || matchingSpaHub?.code || matchingSpaHub?.externalId || '193'
+    : matchingSpaHub?.code || matchingSpaHub?.externalId || '193';
 
   // Dynamic Live Hub (Spa & Wellness)
   const { data: hubData } = useHub(hotelSlug, hubCodeOrId);
 
-  const hubTitle = hubData?.title || hubData?.titleTr?.az || (selectedLang === 'az' ? 'Spa və sağlamlıq' : 'Spa & Wellness');
-  const hubSubtitle = hubData?.subtitle || hubData?.subtitleTr?.az || '';
+  const hubTitle = tr(
+    hubData?.titleTr,
+    hubData?.title || (selectedLang === 'ru' ? 'Спа и велнес' : selectedLang === 'en' ? 'Spa & Wellness' : 'Spa və sağlamlıq'),
+    selectedLang as SupportedLang
+  );
+  const hubSubtitle = tr(hubData?.subtitleTr, hubData?.subtitle || '', selectedLang as SupportedLang);
   const hubCover = resolveMediaUrl(hubData?.coverImageUrl, '/media/guest/pool-indoor.webp');
 
   const liveCategories: SpaCategory[] = React.useMemo(() => {
@@ -46,18 +61,28 @@ export const SpaWellnessPage: React.FC = () => {
       return hubData.categories.map((c) => ({
         id: c.id,
         code: String(c.externalId || c.id),
-        title: c.title,
-        subtitle: c.subtitle || '',
+        title: tr(c.titleTr, c.title, selectedLang as SupportedLang),
+        subtitle: tr(c.subtitleTr, c.subtitle || '', selectedLang as SupportedLang),
         cover: resolveMediaUrl(c.imageUrl, hubCover),
         hours: c.workingHours || '08:00–22:00',
         type: 'category' as const,
         items: [],
       }));
     }
-    return isDemoHotel ? spaCategories : [];
-  }, [hubData, hotelSlug, hubCover, isDemoHotel]);
+    return isDemoHotel
+      ? spaCategories.map((c) => ({
+          ...c,
+          title:
+            selectedLang === 'en' && c.titleEn
+              ? c.titleEn
+              : selectedLang === 'ru' && c.titleRu
+              ? c.titleRu
+              : c.title,
+        }))
+      : [];
+  }, [hubData, hotelSlug, hubCover, isDemoHotel, selectedLang]);
 
-  // Active subpage/category (either from URL /c/:code or /p/:code, or state)
+  // Active subpage/category
   const [activeCategory, setActiveCategory] = useState<SpaCategory | null>(() => {
     if (code) {
       return getSpaCategoryByCodeOrId(code) || null;
@@ -76,20 +101,28 @@ export const SpaWellnessPage: React.FC = () => {
     if (catDetail?.items && catDetail.items.length > 0) {
       return catDetail.items.map((it) => ({
         id: it.id,
-        title: it.title,
-        name: it.title,
+        title: tr(it.titleTr, it.title, selectedLang as SupportedLang),
+        name: tr(it.titleTr, it.title, selectedLang as SupportedLang),
         nameEn: it.titleTr?.en || it.title,
         nameRu: it.titleTr?.ru || it.title,
         duration: it.portionOrDuration || '',
         price: `${it.price} ₼`,
         priceNum: it.price,
-        badge: it.badge || it.badgeTr?.az || undefined,
+        badge: tr(it.badgeTr, it.badge || '', selectedLang as SupportedLang) || undefined,
         image: it.imageUrl ? resolveMediaUrl(it.imageUrl) : undefined,
-        desc: it.description || it.subtitle || undefined,
+        desc: tr(it.descriptionTr, it.description || it.subtitle || '', selectedLang as SupportedLang) || undefined,
       }));
     }
-    return activeCategory?.items || [];
-  }, [catDetail, activeCategory]);
+    return (activeCategory?.items || []).map((it) => ({
+      ...it,
+      title:
+        selectedLang === 'en' && it.titleEn
+          ? it.titleEn
+          : selectedLang === 'ru' && it.titleRu
+          ? it.titleRu
+          : it.title,
+    }));
+  }, [catDetail, activeCategory, selectedLang]);
 
   // Active treatment detail modal
   const [activeTreatment, setActiveTreatment] = useState<SpaTreatmentItem | null>(null);
@@ -136,6 +169,13 @@ export const SpaWellnessPage: React.FC = () => {
   const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
   const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
 
+  const hotelTitleName = liveHotel?.name || portalData?.name || (isDemoHotel ? hotel.name : '');
+  const pageTabTitle = activeCategory ? activeCategory.title : hubTitle;
+  useGuestDocumentMeta(
+    hotelTitleName ? `${pageTabTitle} | ${hotelTitleName}` : pageTabTitle,
+    liveHotel?.logoUrl || portalData?.logoUrl || (isDemoHotel ? hotel.logo : undefined)
+  );
+
   const handleCategoryClick = (cat: SpaCategory) => {
     setActiveCategory(cat);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -156,13 +196,11 @@ export const SpaWellnessPage: React.FC = () => {
     }
   };
 
-  // 8 Exact SVG icons matching qr.unipos.tech/skyhill/hotel/g/193
   const getCategoryIcon = (id: string) => {
     switch (id) {
       case 'about':
-        // Lotus flower
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 5a3 3 0 1 1 3 3m-3-3a3 3 0 1 0-3 3m3-3v1M9 8a3 3 0 1 0 3 3M9 8h1m5 0a3 3 0 1 1-3 3m3-3h-1m-2 3v-1" />
             <circle cx="12" cy="8" r="2" />
             <path d="M12 10v12" />
@@ -171,18 +209,16 @@ export const SpaWellnessPage: React.FC = () => {
           </svg>
         );
       case 'facilities':
-        // Pool waves
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M2 12q2.5 2 5 0t5 0 5 0 5 0" />
             <path d="M2 19q2.5 2 5 0t5 0 5 0 5 0" />
             <path d="M2 5q2.5 2 5 0t5 0 5 0 5 0" />
           </svg>
         );
       case 'massages':
-        // Hand massage
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
             <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
             <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" />
@@ -190,9 +226,8 @@ export const SpaWellnessPage: React.FC = () => {
           </svg>
         );
       case 'facial':
-        // Sparkles facial
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
             <path d="M20 2v4" />
             <path d="M22 4h-4" />
@@ -200,23 +235,20 @@ export const SpaWellnessPage: React.FC = () => {
           </svg>
         );
       case 'rituals':
-        // Star ritual
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
           </svg>
         );
       case 'phytotherapy':
-        // Heart / Plant
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
           </svg>
         );
       case 'packages':
-        // Gift box package
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 7v14" />
             <path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" />
             <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5" />
@@ -225,9 +257,8 @@ export const SpaWellnessPage: React.FC = () => {
         );
       case 'etiquette':
       default:
-        // Document
         return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
             <path d="M14 2v5a1 1 0 0 0 1 1h5" />
             <path d="M10 9H8" />
@@ -239,351 +270,325 @@ export const SpaWellnessPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-hotel-sans flex justify-center selection:bg-[#A78BFA] selection:text-black transition-colors duration-200">
-      {/* Main Responsive Column */}
-      <div className="w-full max-w-[540px] min-h-screen bg-[var(--bg-main)] flex flex-col relative pb-10 border-x border-[var(--border-color)] overflow-x-hidden shadow-2xl">
-        
-        {/* ===================== 1. HERO HEADER (1:1 with Reference) ===================== */}
-        <header className="relative w-full h-[178px] overflow-hidden bg-[#181424] flex-none">
-          <img
-            src={resolveMediaUrl(activeCategory?.cover || hubCover, '/media/guest/pool-indoor.webp')}
-            alt={activeCategory ? activeCategory.title : hubTitle}
-            className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
-          />
+    <div className="fs-portal min-h-screen flex flex-col selection:bg-black selection:text-white pb-16">
+      {/* ===================== 1. FULL-BLEED ARCHITECTURAL HERO ===================== */}
+      <header className="relative w-full h-[240px] sm:h-[320px] lg:h-[380px] overflow-hidden bg-[#0F0F0F] flex-none">
+        <img
+          src={resolveMediaUrl(activeCategory?.cover || hubCover, '/media/guest/pool-indoor.webp')}
+          alt={activeCategory ? activeCategory.title : hubTitle}
+          onError={(e) => {
+            const fallback = resolveMediaUrl('/media/guest/pool-indoor.webp');
+            if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+              e.currentTarget.dataset.fbApplied = '1';
+              e.currentTarget.src = fallback;
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
+        />
 
-          {/* Dark luxury gradient shade */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(8,12,22,0.65) 0%, rgba(8,12,22,0.25) 45%, rgba(8,12,22,0.85) 100%)',
-            }}
-          />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.16) 45%, rgba(0,0,0,0.78) 100%)',
+          }}
+        />
 
-          {/* Top Bar with Back & Home Buttons */}
-          <div className="absolute top-[14px] left-[14px] right-[14px] z-20 flex items-center justify-between pointer-events-auto">
-            {/* Back button */}
-            <button
-              type="button"
-              onClick={activeCategory ? handleBackToSpaList : () => navigate(homePath)}
-              aria-label="Geri"
-              className="w-[36px] h-[36px] rounded-full bg-[#101826]/70 border border-white/25 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all shadow-sm"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
+        <div className="relative z-20 max-w-[1280px] mx-auto px-4 sm:px-8 pt-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={activeCategory ? handleBackToSpaList : () => navigate(homePath)}
+            aria-label="Geri"
+            className="w-10 h-10 bg-black/40 border border-white/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
 
-            {/* Home button */}
+          <div className="flex items-center gap-2">
+            <GuestLangPill />
             <button
               type="button"
               onClick={() => navigate(homePath)}
               aria-label="Ana səhifə"
-              className="w-[36px] h-[36px] rounded-full bg-[#101826]/70 border border-white/25 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all shadow-sm"
+              className="w-10 h-10 bg-black/40 border border-white/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors"
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
                 <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               </svg>
             </button>
           </div>
-
-          {/* Title in Cormorant Garamond Serif */}
-          <div className="absolute bottom-[16px] left-[18px] right-[18px] z-20">
-            <h1
-              className="font-hotel-serif text-[28px] sm:text-[32px] leading-none font-semibold text-white tracking-wide"
-              style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}
-            >
-              {activeCategory ? activeCategory.title : hubTitle}
-            </h1>
-            {(activeCategory?.hours || (!activeCategory && hubSubtitle)) && (
-              <p
-                className="text-[12px] text-white/85 font-hotel-sans mt-1 leading-snug"
-                style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }}
-              >
-                {activeCategory ? activeCategory.hours : hubSubtitle}
-              </p>
-            )}
-          </div>
-        </header>
-
-        {/* ===================== 2. SHEET BODY ===================== */}
-        <div className="relative z-10 -mt-2.5 rounded-t-[22px] bg-[var(--bg-main)] pt-3 px-3.5 flex-1 flex flex-col">
-
-          {/* VIEW A: SPA CATEGORIES / PAGES LIST */}
-          {!activeCategory && (
-            liveCategories.length > 0 ? (
-              <div className="rounded-[16px] bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] divide-y divide-[var(--border-color)]">
-                {liveCategories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleCategoryClick(cat)}
-                    className="w-full py-3.5 px-3.5 sm:px-4 flex items-center justify-between gap-3 text-left hover:bg-[var(--bg-subcard)]/50 active:bg-[var(--bg-subcard)] transition-colors group"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      {/* SVG Line Icon */}
-                      <span className="text-[#a87b51] dark:text-[#A78BFA] flex-none group-hover:scale-110 transition-transform">
-                        {getCategoryIcon(cat.id)}
-                      </span>
-
-                      {/* Title */}
-                      <span className="font-hotel-sans font-medium text-[14px] text-[var(--text-main)] group-hover:text-[#a87b51] dark:group-hover:text-[#A78BFA] transition-colors truncate">
-                        {cat.title}
-                      </span>
-                    </div>
-
-                    {/* Right Chevron > */}
-                    <span className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] group-hover:translate-x-0.5 transition-all flex-none">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
-                <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3 text-[#A78BFA]">
-                  <span className="text-2xl">💆</span>
-                </div>
-                <h3 className="font-hotel-serif text-[18px] font-semibold text-[var(--text-main)] mb-1">
-                  {selectedLang === 'az' ? 'Spa kateqoriyası əlavə edilməyib' : 'No spa categories added'}
-                </h3>
-                <p className="text-[12.5px] text-[var(--text-muted)] max-w-[280px]">
-                  {selectedLang === 'az' ? 'Bu bölmədə hələlik heç bir spa xidməti kateqoriyası əlavə edilməyib.' : 'No spa service categories added yet.'}
-                </p>
-              </div>
-            )
-          )}
-
-          {/* VIEW B: ARTICLE DETAIL (p/43188 MARAL Spa haqqında or p/43212 SPA etiketi) */}
-          {activeCategory && activeCategory.type === 'page' && (
-            <div className="space-y-4 pt-1">
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>Məlumat vərəqi</span>
-                <button
-                  type="button"
-                  onClick={handleBackToSpaList}
-                  className="text-[#a87b51] dark:text-[#A78BFA] hover:underline font-semibold flex items-center gap-1"
-                >
-                  ← Bütün SPA bölmələri
-                </button>
-              </div>
-
-              <div className="rounded-[16px] bg-[var(--bg-card)] border border-[var(--border-color)] p-5 space-y-4 shadow-sm">
-                <div className="space-y-3">
-                  <p className="text-[13px] sm:text-[14px] text-[var(--text-main)] leading-relaxed whitespace-pre-line font-hotel-sans">
-                    {activeCategory.articleContent}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-[var(--border-color)]">
-                  <a
-                    href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
-                      `Salam, ${activeCategory.title} ilə bağlı məlumat almaq və ya rezervasiya etmək istəyirəm.`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-3 rounded-xl bg-[#25D366] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform shadow-sm"
-                  >
-                    💬 WhatsApp
-                  </a>
-                  <a
-                    href={`tel:${displayPhone}`}
-                    className="py-3 rounded-xl bg-[#a87b51] dark:bg-[#A78BFA] text-white dark:text-black text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform shadow-sm"
-                  >
-                    📞 Resepşna Zəng
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW C: TREATMENT / PROCEDURE LIST (c/4586 - c/4591) */}
-          {activeCategory && activeCategory.type === 'category' && (
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>{displayTreatments.length} xidmət təklif olunur</span>
-                <button
-                  type="button"
-                  onClick={handleBackToSpaList}
-                  className="text-[#a87b51] dark:text-[#A78BFA] hover:underline font-semibold flex items-center gap-1"
-                >
-                  ← Bütün SPA bölmələri
-                </button>
-              </div>
-
-              {/* Items List */}
-              <div className="space-y-2">
-                {displayTreatments.map((it) => (
-                  <div
-                    key={it.id}
-                    onClick={() => setActiveTreatment(it)}
-                    className="w-full rounded-[14px] bg-[var(--bg-card)] border border-[var(--border-color)] p-2.5 flex items-center justify-between gap-3 cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:border-[#a87b51]/40 dark:hover:border-[#A78BFA]/40 active:scale-[0.99] transition-all group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Image Thumbnail if available */}
-                      {it.image && (
-                        <div className="w-[84px] h-[64px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/30">
-                          <img
-                            src={resolveMediaUrl(it.image, '/media/guest/massage.webp')}
-                            alt={it.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-
-                      {/* Title & Description */}
-                      <div className="min-w-0 pr-1">
-                        <h4 className="font-semibold text-xs sm:text-[13.5px] text-[var(--text-main)] group-hover:text-[#a87b51] dark:group-hover:text-[#A78BFA] transition-colors leading-tight">
-                          {it.title}
-                        </h4>
-                        {it.desc && (
-                          <p className="text-[11px] text-[var(--text-muted)] font-hotel-sans mt-0.5 line-clamp-2 leading-relaxed">
-                            {it.desc}
-                          </p>
-                        )}
-                        {it.price && (
-                          <span className="text-xs font-bold text-[#a87b51] dark:text-[#A78BFA] block mt-1">
-                            {it.price}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Booking Chevron / Action */}
-                    <div className="flex items-center gap-1.5 flex-none">
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-main)] group-hover:bg-[#a87b51] group-hover:text-white dark:group-hover:bg-[#A78BFA] dark:group-hover:text-black transition-colors">
-                        Bax →
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quick Reception Contact Box */}
-          <div className="pt-4 pb-2">
-            <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between gap-3 shadow-sm">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-[#a87b51]/15 dark:bg-[#A78BFA]/15 text-[#a87b51] dark:text-[#A78BFA] flex items-center justify-center text-sm font-bold">
-                  🌸
-                </span>
-                <div>
-                  <span className="text-xs font-bold text-[var(--text-main)] block">
-                    MARAL Spa Rezervasiya
-                  </span>
-                  <span className="text-[11px] text-[var(--text-muted)] block">
-                    09:00 – 22:00 · Daxili xətt: 5
-                  </span>
-                </div>
-              </div>
-              <a
-                href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
-                  'Salam, MARAL Spa xidmətləri üçün rezervasiya etmək istəyirəm.'
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-xl bg-[#25D366] text-white text-[11px] font-bold shadow-sm active:scale-95 transition-transform"
-              >
-                WhatsApp
-              </a>
-            </div>
-          </div>
         </div>
 
-        {/* ===================== 3. TREATMENT DETAIL MODAL ===================== */}
-        <AnimatePresence>
-          {activeTreatment && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/75 backdrop-blur-sm"
-                onClick={() => setActiveTreatment(null)}
-              />
+        <div className="absolute inset-x-0 bottom-0 z-20 max-w-[1140px] mx-auto px-4 sm:px-8 pb-6 sm:pb-9">
+          <p className="fs-eyebrow text-[16px] sm:text-[18px] text-white/85 mb-1">
+            {activeCategory ? activeCategory.hours || 'Wellness & Spa' : 'Sanctuary & Rituals'}
+          </p>
+          <h1 className="font-fs-sans font-extralight text-[26px] sm:text-[34px] lg:text-[40px] leading-[1.2] tracking-[0.18em] uppercase text-white">
+            {activeCategory ? activeCategory.title : hubTitle}
+          </h1>
+          {!activeCategory && hubSubtitle && (
+            <p className="font-fs-serif text-[15px] sm:text-[17px] text-white/85 mt-1.5 max-w-2xl leading-snug">
+              {hubSubtitle}
+            </p>
+          )}
+        </div>
+      </header>
 
-              <motion.div
-                initial={{ opacity: 0, y: 60 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 60 }}
-                transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-                className="relative z-10 w-full max-w-[480px] max-h-[85vh] overflow-y-auto rounded-t-[26px] sm:rounded-[26px] bg-[var(--bg-card)] border border-[var(--border-color)] p-5 text-[var(--text-main)] shadow-2xl space-y-4"
-              >
-                <div className="w-12 h-1.5 rounded-full bg-white/20 mx-auto mb-1" />
-
-                {activeTreatment.image && (
-                  <div className="w-full h-[180px] rounded-2xl overflow-hidden bg-black/30">
-                    <img
-                      src={resolveMediaUrl(activeTreatment.image, '/media/guest/massage.webp')}
-                      alt={activeTreatment.title}
-                      className="w-full h-full object-cover"
-                    />
+      {/* ===================== 2. MAIN RESPONSIVE CONTENT ===================== */}
+      <main className="flex-1 w-full max-w-[1140px] mx-auto px-4 sm:px-8 py-8 sm:py-12 space-y-10">
+        {/* VIEW A: SPA CATEGORIES DIRECTORY */}
+        {!activeCategory &&
+          (liveCategories.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[var(--fs-border)] border border-[var(--fs-border)]">
+              {liveCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleCategoryClick(cat)}
+                  className="w-full py-5 px-5 sm:px-7 bg-[var(--fs-card)] hover:bg-[var(--fs-surface-subtle)] flex items-center justify-between gap-4 text-left transition-colors group"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <span className="text-[var(--fs-text)] flex-none">{getCategoryIcon(cat.id)}</span>
+                    <div className="min-w-0">
+                      <span className="font-fs-serif text-[19px] sm:text-[20px] text-[var(--fs-text)] block truncate">
+                        {cat.title}
+                      </span>
+                      {cat.hours && (
+                        <span className="text-xs text-[var(--fs-text-muted)] block truncate mt-0.5">
+                          {cat.hours}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
 
-                <div className="flex items-start justify-between gap-3">
+                  <span className="text-[var(--fs-text-muted)] group-hover:text-[var(--fs-text)] group-hover:translate-x-1 transition-all flex-none">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="py-16 px-6 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] flex flex-col items-center justify-center text-center space-y-3">
+              <h3 className="font-fs-sans font-extralight text-[20px] tracking-[0.18em] uppercase text-[var(--fs-text)]">
+                {selectedLang === 'az' ? 'Spa kateqoriyası əlavə edilməyib' : 'No spa categories added'}
+              </h3>
+              <p className="font-fs-serif text-[15.5px] text-[var(--fs-text-muted)] max-w-sm">
+                {selectedLang === 'az'
+                  ? 'Bu bölmədə hələlik heç bir spa xidməti kateqoriyası əlavə edilməyib.'
+                  : 'No spa service categories added yet.'}
+              </p>
+            </div>
+          ))}
+
+        {/* VIEW B: ARTICLE DETAIL */}
+        {activeCategory && activeCategory.type === 'page' && (
+          <div className="space-y-6 max-w-[820px] mx-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--fs-border)]">
+              <span className="fs-kicker text-[var(--fs-text-muted)]">
+                {selectedLang === 'ru' ? 'Информация' : selectedLang === 'en' ? 'Information' : 'Məlumat vərəqi'}
+              </span>
+              <button
+                type="button"
+                onClick={handleBackToSpaList}
+                className="fs-link-underlined text-[var(--fs-text)]"
+              >
+                {selectedLang === 'ru'
+                  ? '← Все разделы СПА'
+                  : selectedLang === 'en'
+                  ? '← All SPA sections'
+                  : '← Bütün SPA bölmələri'}
+              </button>
+            </div>
+
+            <div className="bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] p-7 sm:p-12 space-y-6">
+              <p className="font-fs-serif text-[16.5px] sm:text-[18px] text-[var(--fs-text-body)] leading-[1.75] whitespace-pre-line">
+                {activeCategory.articleContent}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 border-t border-[var(--fs-border)]">
+                <a
+                  href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
+                    `Salam, ${activeCategory.title} ilə bağlı məlumat almaq və ya rezervasiya etmək istəyirəm.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="fs-btn-primary w-full"
+                >
+                  {selectedLang === 'ru' ? 'Бронь в WhatsApp' : selectedLang === 'en' ? 'WhatsApp Booking' : 'WhatsApp Rezervasiya'}
+                </a>
+                <a href={`tel:${displayPhone}`} className="fs-btn-outline w-full">
+                  {selectedLang === 'ru' ? 'Позвонить на ресепшн' : selectedLang === 'en' ? 'Call Reception' : 'Resepşna Zəng'}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW C: TREATMENT / PROCEDURE GALLERY */}
+        {activeCategory && activeCategory.type === 'category' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--fs-border)]">
+              <span className="fs-kicker text-[var(--fs-text-muted)]">
+                {displayTreatments.length}{' '}
+                {selectedLang === 'ru' ? 'процедур' : selectedLang === 'en' ? 'treatments' : 'xidmət təklif olunur'}
+              </span>
+              <button
+                type="button"
+                onClick={handleBackToSpaList}
+                className="fs-link-underlined text-[var(--fs-text)]"
+              >
+                {selectedLang === 'ru'
+                  ? '← Все разделы СПА'
+                  : selectedLang === 'en'
+                  ? '← All SPA sections'
+                  : '← Bütün SPA bölmələri'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-[30px]">
+              {displayTreatments.map((it) => (
+                <div
+                  key={it.id}
+                  onClick={() => setActiveTreatment(it)}
+                  className="w-full rounded-none bg-[var(--fs-card)] border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] flex flex-col cursor-pointer transition-colors group"
+                >
+                  {it.image && (
+                    <div className="w-full aspect-[16/10] overflow-hidden bg-[var(--fs-surface-subtle)]">
+                      <img
+                        src={resolveMediaUrl(it.image, '/media/guest/massage.webp')}
+                        alt={it.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-fs-serif text-[20px] sm:text-[21px] text-[var(--fs-text)] leading-snug">
+                        {it.title}
+                      </h4>
+                      {it.desc && (
+                        <p className="font-fs-serif text-[15px] text-[var(--fs-text-muted)] line-clamp-3 leading-relaxed">
+                          {it.desc}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between border-t border-[var(--fs-border)]">
+                      {it.price ? (
+                        <span className="font-fs-sans text-[14px] font-bold tracking-[0.06em] text-[var(--fs-text)]">
+                          {it.price}
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <span className="fs-link-underlined text-[var(--fs-text)]">
+                        {selectedLang === 'ru' ? 'Подробнее →' : selectedLang === 'en' ? 'Details →' : 'Bax →'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Spa Concierge Strip */}
+        <div className="p-6 sm:p-8 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1">
+            <span className="fs-kicker text-[var(--fs-text-muted)] block">Spa Reception</span>
+            <h4 className="font-fs-serif text-[21px] text-[var(--fs-text)]">
+              {selectedLang === 'ru'
+                ? 'Бронирование СПА'
+                : selectedLang === 'en'
+                ? 'Spa Reservations'
+                : 'MARAL Spa Rezervasiya'}
+            </h4>
+            <p className="font-fs-serif text-[15px] text-[var(--fs-text-muted)]">
+              {selectedLang === 'ru'
+                ? '09:00 – 22:00 · Внутренний номер: 5'
+                : selectedLang === 'en'
+                ? '09:00 – 22:00 · Internal ext: 5'
+                : '09:00 – 22:00 · Daxili xətt: 5'}
+            </p>
+          </div>
+          <a
+            href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
+              'Salam, MARAL Spa xidmətləri üçün rezervasiya etmək istəyirəm.'
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fs-btn-outline shrink-0"
+          >
+            {selectedLang === 'ru' ? 'Бронь в WhatsApp' : selectedLang === 'en' ? 'WhatsApp Booking' : 'WhatsApp Rezervasiya'}
+          </a>
+        </div>
+      </main>
+
+      {/* ===================== 3. TREATMENT DETAIL MODAL ===================== */}
+      <AnimatePresence>
+        {activeTreatment && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[var(--fs-backdrop)] backdrop-blur-[2px]"
+              onClick={() => setActiveTreatment(null)}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative z-10 w-full max-w-[500px] max-h-[88vh] overflow-y-auto rounded-none bg-[var(--fs-card)] border-t sm:border border-[var(--fs-border)] text-[var(--fs-text)] shadow-2xl"
+            >
+              {activeTreatment.image && (
+                <div className="w-full h-[220px] overflow-hidden bg-[var(--fs-surface-subtle)]">
+                  <img
+                    src={resolveMediaUrl(activeTreatment.image, '/media/guest/massage.webp')}
+                    alt={activeTreatment.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="p-6 sm:p-8 space-y-4">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-hotel-serif text-xl font-bold uppercase tracking-wide text-[var(--text-main)]">
+                    <h3 className="font-fs-sans font-extralight text-[21px] uppercase tracking-[0.15em] text-[var(--fs-text)]">
                       {activeTreatment.title}
                     </h3>
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => setActiveTreatment(null)}
-                    className="w-8 h-8 rounded-full bg-[var(--bg-subcard)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                    className="w-8 h-8 border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] flex items-center justify-center text-[var(--fs-text-muted)] hover:text-[var(--fs-text)] shrink-0"
                   >
                     ✕
                   </button>
                 </div>
 
                 {activeTreatment.desc && (
-                  <p className="text-xs sm:text-[13px] text-[var(--text-main)]/85 leading-relaxed font-hotel-sans">
+                  <p className="font-fs-serif text-[16px] text-[var(--fs-text-muted)] leading-relaxed">
                     {activeTreatment.desc}
                   </p>
                 )}
 
                 {activeTreatment.price && (
-                  <div className="text-lg font-bold text-[#a87b51] dark:text-[#A78BFA]">
+                  <div className="font-fs-sans text-[18px] font-bold tracking-[0.06em] text-[var(--fs-text)] pt-1">
                     {activeTreatment.price}
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--border-color)]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-[var(--fs-border)]">
                   <a
                     href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
                       `Salam, MARAL Spa üzrə [${activeTreatment.title}${
@@ -592,9 +597,9 @@ export const SpaWellnessPage: React.FC = () => {
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="py-3 rounded-2xl bg-[#25D366] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform shadow-md"
+                    className="fs-btn-primary w-full"
                   >
-                    💬 WhatsApp Rezervasiya
+                    WhatsApp Rezervasiya
                   </a>
                   <button
                     type="button"
@@ -602,25 +607,24 @@ export const SpaWellnessPage: React.FC = () => {
                       setIsInquiryOpen(true);
                       setActiveTreatment(null);
                     }}
-                    className="py-3 rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                    className="fs-btn-outline w-full"
                   >
-                    📝 Sifariş Formu
+                    Sifariş Formu
                   </button>
                 </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-        {/* ===================== 4. INQUIRY MODAL ===================== */}
-        <InquirySheet
-          isOpen={isInquiryOpen}
-          onClose={() => setIsInquiryOpen(false)}
-          t={t.inquiry}
-          slug={hotelSlug}
-        />
-      </div>
+      {/* ===================== 4. INQUIRY MODAL ===================== */}
+      <InquirySheet
+        isOpen={isInquiryOpen}
+        onClose={() => setIsInquiryOpen(false)}
+        t={t.inquiry}
+        slug={hotelSlug}
+      />
     </div>
   );
 };
-

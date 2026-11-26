@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHub } from '../../hooks/useHotelData';
 import { HubType } from '../../types/api';
@@ -28,6 +28,15 @@ export const HubDispatcher: React.FC = () => {
   const { slug = 'altensor', code = '191' } = useParams<{ slug?: string; code?: string }>();
   const navigate = useNavigate();
   const normalizedCode = code.toLowerCase();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('fs_guest_dark');
+    if (saved === '1') {
+      document.documentElement.classList.add('fs-dark');
+    } else {
+      document.documentElement.classList.remove('fs-dark');
+    }
+  }, []);
 
   // Fast-path known static hub codes for altensor / skyhill reference
   if (slug === 'altensor' || slug === 'skyhill') {
@@ -85,24 +94,28 @@ export const HubDispatcher: React.FC = () => {
     return <Suspense fallback={<PageLoader />}>{hubComponent}</Suspense>;
   }
 
-  // If hub is not found for this hotel, render clean empty message
+  // If hub is not found for this hotel, render clean Four Seasons empty message
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl mb-4 text-[#A78BFA]">
-        🔍
+    <div className="fs-portal min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="max-w-md w-full bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] p-10 sm:p-12 space-y-5">
+        <p className="fs-eyebrow text-[17px] text-[var(--fs-text-muted)]">Digital Concierge</p>
+        <h2 className="font-fs-sans font-extralight text-[24px] tracking-[0.18em] uppercase text-[var(--fs-text)]">
+          Bölmə tapılmadı
+        </h2>
+        <div className="w-10 h-[1px] bg-[var(--fs-border-strong)] mx-auto" />
+        <p className="font-fs-serif text-[16px] leading-relaxed text-[var(--fs-text-muted)]">
+          Axtardığınız bölmə mövcud deyil və ya bu otel tərəfindən hələlik aktiv edilməyib.
+        </p>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => navigate(slug ? `/hotel/${slug}` : '/')}
+            className="fs-btn-primary w-full sm:w-auto"
+          >
+            Ana səhifəyə qayıt
+          </button>
+        </div>
       </div>
-      <h2 className="font-hotel-serif text-2xl font-bold mb-2">Bölmə tapılmadı</h2>
-      <p className="text-sm text-[var(--text-muted)] max-w-xs mb-6">
-        Axtardığınız bölmə mövcud deyil və ya bu otel tərəfindən hələlik aktiv edilməyib.
-      </p>
-      <button
-        type="button"
-        onClick={() => navigate(slug ? `/hotel/${slug}` : '/')}
-        className="px-6 py-2.5 rounded-xl bg-[#A78BFA] text-black text-sm font-semibold hover:bg-[#906fe8] active:scale-95 transition-all"
-      >
-        Ana səhifəyə qayıt
-      </button>
     </div>
   );
 };
-

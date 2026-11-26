@@ -108,3 +108,197 @@ html, body {
 .animate-slide-up {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==========================================================================
+   FOUR SEASONS HOTEL BAKU — GUEST PORTAL DESIGN SYSTEM (.fs-portal)
+   Strictly scoped to Guest Portal; Admin, Reception, SuperAdmin untouched.
+   ========================================================================== */
+.fs-portal {
+  color-scheme: light;
+  --fs-bg: #FFFFFF;
+  --fs-surface-subtle: #F5F5F5;
+  --fs-surface-recessed: #EAEAEA;
+  --fs-card: #FFFFFF;
+  --fs-text: #000000;
+  --fs-text-body: #1F1F1F;
+  --fs-text-muted: #4D4D4D;
+  --fs-text-subtle: #6B6B6B;
+  --fs-border: #D8D8D8;
+  --fs-border-strong: #000000;
+  --fs-input-bg: rgba(3, 3, 3, 0.045);
+  --fs-input-border: rgba(77, 77, 77, 0.25);
+  --fs-nav-sticky: rgba(26, 26, 26, 0.92);
+  --fs-backdrop: rgba(3, 3, 3, 0.62);
+  --fs-inv-bg: #000000;
+  --fs-inv-text: #FFFFFF;
+  background-color: var(--fs-bg);
+  color: var(--fs-text);
+  font-family: "Helvetica Neue", "Inter", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.fs-dark .fs-portal,
+.fs-portal.fs-dark {
+  color-scheme: dark;
+  --fs-bg: #0A0A0A;
+  --fs-surface-subtle: #141414;
+  --fs-surface-recessed: #1E1E1E;
+  --fs-card: #121212;
+  --fs-text: #FFFFFF;
+  --fs-text-body: #E6E6E6;
+  --fs-text-muted: #B0B0B0;
+  --fs-text-subtle: #8A8A8A;
+  --fs-border: rgba(255, 255, 255, 0.15);
+  --fs-border-strong: #FFFFFF;
+  --fs-input-bg: rgba(255, 255, 255, 0.06);
+  --fs-input-border: rgba(255, 255, 255, 0.22);
+  --fs-nav-sticky: rgba(10, 10, 10, 0.94);
+  --fs-backdrop: rgba(0, 0, 0, 0.78);
+  --fs-inv-bg: #FFFFFF;
+  --fs-inv-text: #000000;
+}
+
+.font-fs-sans {
+  font-family: "Helvetica Neue", "Inter", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-feature-settings: "lnum";
+  font-variant-numeric: lining-nums;
+}
+
+.font-fs-serif {
+  font-family: "Cormorant Garamond", Garamond, Georgia, "Times New Roman", serif;
+  font-feature-settings: "lnum";
+  font-variant-numeric: lining-nums;
+}
+
+.fs-eyebrow {
+  font-family: "Cormorant Garamond", Garamond, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+
+.fs-kicker {
+  font-family: "Helvetica Neue", "Inter", sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+}
+
+.fs-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--fs-inv-bg);
+  color: var(--fs-inv-text);
+  border: 1px solid var(--fs-border-strong);
+  border-radius: 0px;
+  font-family: "Helvetica Neue", "Inter", sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  transition: background-color 0.3s ease-out, color 0.3s ease-out, border-color 0.3s ease-out;
+}
+
+@media (hover: hover) {
+  .fs-btn-primary:hover:not(:disabled) {
+    background-color: var(--fs-bg);
+    color: var(--fs-text);
+  }
+}
+
+.fs-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--fs-text);
+  border: 1px solid var(--fs-border-strong);
+  border-radius: 0px;
+  font-family: "Helvetica Neue", "Inter", sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  transition: background-color 0.3s ease-out, color 0.3s ease-out, border-color 0.3s ease-out;
+}
+
+@media (hover: hover) {
+  .fs-btn-outline:hover:not(:disabled) {
+    background-color: var(--fs-inv-bg);
+    color: var(--fs-inv-text);
+  }
+}
+
+.fs-btn-light-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: #FFFFFF;
+  border: 1px solid #FFFFFF;
+  border-radius: 0px;
+  font-family: "Helvetica Neue", "Inter", sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  transition: background-color 0.3s ease-out, color 0.3s ease-out;
+}
+
+@media (hover: hover) {
+  .fs-btn-light-outline:hover {
+    background-color: #FFFFFF;
+    color: #000000;
+  }
+}
+
+.fs-link-underlined {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 3px;
+  border-bottom: 1px solid currentColor;
+  font-family: "Helvetica Neue", "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  transition: opacity 0.25s ease;
+}
+
+.fs-link-underlined:hover {
+  opacity: 0.65;
+}
+
+.fs-input {
+  width: 100%;
+  border-radius: 4px;
+  background-color: var(--fs-input-bg);
+  border: 1px solid var(--fs-input-border);
+  color: var(--fs-text);
+  font-family: "Helvetica Neue", "Inter", sans-serif;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.fs-input::placeholder {
+  color: var(--fs-text-subtle);
+}
+
+.fs-input:focus {
+  outline: none;
+  border-color: var(--fs-border-strong);
+}

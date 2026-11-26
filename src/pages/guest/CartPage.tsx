@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuestCart } from '../../context/GuestCartContext';
@@ -10,6 +10,8 @@ import { useHotelPortal } from '../../hooks/useHotelData';
 import { OrderType, SubmitOrderRequestDto, GuestOrderDto } from '../../types/api';
 import { InquirySheet } from './components/InquirySheet';
 import { resolveMediaUrl } from '../../utils/media';
+import { useGuestDocumentMeta } from '../../utils/documentHead';
+import { GuestLangPill } from './components/GuestLangPill';
 
 export const CartPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
@@ -21,10 +23,15 @@ export const CartPage: React.FC = () => {
   const selectedLang = (currentLang as Language) || 'az';
   const { data: portalData } = useHotelPortal(hotelSlug);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const saved = localStorage.getItem('fs_guest_dark');
+    document.documentElement.classList.toggle('fs-dark', saved === '1');
+  }, []);
+
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
-  // Order Submission Form State
   const [orderType, setOrderType] = useState<OrderType>(OrderType.RoomService);
   const [roomOrTableNumber, setRoomOrTableNumber] = useState('');
   const [guestName, setGuestName] = useState('');
@@ -50,6 +57,12 @@ export const CartPage: React.FC = () => {
   const menuPath = `/${hotelSlug}/hotel/g/192`;
   const displayPhone = portalData?.phone || (isDemoHotel ? hotel.phone : '');
   const displayWhatsapp = (portalData?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+
+  const hotelTitleName = portalData?.name || (isDemoHotel ? hotel.name : '');
+  useGuestDocumentMeta(
+    hotelTitleName ? `Səbət | ${hotelTitleName}` : 'Səbət',
+    portalData?.logoUrl || (isDemoHotel ? hotel.logo : undefined)
+  );
 
   const serviceFeePercent = portalData?.serviceFeePercent || 0;
   const serviceFeeAmount = (totalPrice * serviceFeePercent) / 100;
@@ -118,236 +131,207 @@ export const CartPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-hotel-sans flex justify-center selection:bg-[#A78BFA] selection:text-black transition-colors duration-200">
-      {/* Main Responsive Column */}
-      <div className="w-full max-w-[540px] min-h-screen bg-[var(--bg-main)] flex flex-col relative pb-10 border-x border-[var(--border-color)] overflow-x-hidden shadow-2xl">
-        
-        {/* ===================== 1. HEADER ===================== */}
-        <header className="relative w-full h-[140px] overflow-hidden bg-gradient-to-br from-[#3e2c20] via-[#2d2017] to-[#1c130d] dark:from-[#231b2e] dark:via-[#191322] dark:to-[#0f0b15] flex-none">
-          {/* Subtle Right Watermark Shopping Bag Outline */}
-          <span className="absolute right-3 -bottom-2 text-[#dfc08a]/15 dark:text-[#A78BFA]/15 pointer-events-none select-none">
-            <svg
-              width="130"
-              height="130"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M16 10a4 4 0 0 1-8 0" />
-              <path d="M3.103 6.034h17.794" />
-              <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" />
-            </svg>
-          </span>
-
-          {/* Top Bar with Back & Home Buttons */}
-          <div className="absolute top-[14px] left-[14px] right-[14px] z-20 flex items-center justify-between pointer-events-auto">
-            {/* Back button */}
+    <div className="fs-portal min-h-screen flex flex-col selection:bg-black selection:text-white pb-16">
+      {/* ===================== 1. ARCHITECTURAL MONOCHROME HEADER ===================== */}
+      <header className="relative w-full bg-[#0F0F0F] text-white border-b border-white/15 py-6 sm:py-9 flex-none">
+        <div className="max-w-[1140px] mx-auto px-4 sm:px-8 space-y-6">
+          <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => navigate(-1)}
               aria-label="Geri"
-              className="w-[36px] h-[36px] rounded-full bg-[#101826]/70 border border-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all shadow-sm"
+              className="w-10 h-10 border border-white/30 hover:bg-white hover:text-black flex items-center justify-center transition-colors"
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
 
-            {/* Clear Cart Button */}
-            {totalCount > 0 && (
+            <div className="flex items-center gap-2.5">
+              <GuestLangPill />
+              {totalCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="h-10 px-4 border border-white/30 hover:bg-white hover:text-black text-[10px] font-bold tracking-[0.22em] uppercase transition-colors"
+                >
+                  Təmizlə
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={clearCart}
-                className="px-3 py-1.5 rounded-full bg-red-500/20 border border-red-400/30 text-red-300 text-xs font-semibold hover:bg-red-500/30 active:scale-95 transition-all shadow-sm flex items-center gap-1.5 backdrop-blur-md"
+                onClick={() => navigate(homePath)}
+                aria-label="Ana Səhifə"
+                className="w-10 h-10 border border-white/30 hover:bg-white hover:text-black flex items-center justify-center transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
-                <span>Təmizlə</span>
               </button>
-            )}
-
-            {/* Home button */}
-            <button
-              type="button"
-              onClick={() => navigate(homePath)}
-              aria-label="Ana Səhifə"
-              className="w-[36px] h-[36px] rounded-full bg-[#101826]/70 border border-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all shadow-sm"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-            </button>
+            </div>
           </div>
 
-          {/* Title and Subtitle Block */}
-          <div className="absolute bottom-[16px] left-[18px] right-[18px] z-10 pointer-events-none">
-            <h1 className="font-hotel-serif text-[28px] sm:text-[30px] font-bold text-white tracking-[0.04em] leading-tight flex items-center gap-2">
-              <span>Səbət</span>
+          <div>
+            <p className="fs-eyebrow text-[16px] text-white/75 mb-1">In-Room & Dining Folio</p>
+            <div className="flex items-center gap-3">
+              <h1 className="font-fs-sans font-extralight text-[26px] sm:text-[34px] tracking-[0.18em] uppercase text-white">
+                Səbət
+              </h1>
               {totalCount > 0 && (
-                <span className="text-xs font-sans font-bold px-2 py-0.5 rounded-full bg-[#dfc08a] dark:bg-[#A78BFA] text-black">
+                <span className="px-2.5 py-0.5 bg-white text-black font-fs-sans text-[11px] font-bold tabular-nums">
                   {totalCount}
                 </span>
               )}
-            </h1>
-            <p className="text-[12px] text-white/70 font-medium tracking-[0.06em] mt-0.5">
+            </div>
+            <p className="font-fs-serif text-[15px] text-white/75 mt-1">
               Seçilmiş xidmətlər və yeməklər
             </p>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* ===================== 2. CART CONTENT ===================== */}
-        <div className="flex-1 px-4 py-4 space-y-4">
-          {cartItemsDetailed.length === 0 ? (
-            <div className="py-16 text-center space-y-3">
-              <div className="w-16 h-16 mx-auto rounded-full bg-[var(--bg-subcard)] flex items-center justify-center text-3xl">
-                🛒
-              </div>
-              <h3 className="font-bold text-lg text-[var(--text-main)]">Səbətiniz boşdur</h3>
-              <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto">
-                Restoran, spa və ya digər xidmətlərdən seçim edərək səbətə əlavə edə bilərsiniz.
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(menuPath)}
-                  className="px-6 py-2.5 rounded-xl bg-[#a87b51] dark:bg-[#A78BFA] text-white dark:text-black text-xs font-bold shadow-md active:scale-95 transition-transform"
-                >
-                  Menyuya Keçid
-                </button>
-              </div>
+      {/* ===================== 2. RESPONSIVE CART CONTENT ===================== */}
+      <main className="flex-1 w-full max-w-[1140px] mx-auto px-4 sm:px-8 py-8 sm:py-14">
+        {cartItemsDetailed.length === 0 ? (
+          <div className="max-w-lg mx-auto bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] p-10 sm:p-14 text-center space-y-5">
+            <div className="w-14 h-14 mx-auto border border-[var(--fs-border-strong)] flex items-center justify-center text-[var(--fs-text)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+                <path d="M16 10a4 4 0 0 1-8 0" />
+                <path d="M3.103 6.034h17.794" />
+                <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" />
+              </svg>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Item List */}
-              <div className="space-y-2">
-                {cartItemsDetailed.map(({ item, venue, quantity }) => (
-                  <div
-                    key={item.id}
-                    className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between gap-3 shadow-sm"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Image Thumbnail */}
-                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--bg-subcard)] flex-none">
-                        <img
-                          src={resolveMediaUrl(item.image, '/media/guest/plate.webp')}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const fallback = resolveMediaUrl('/media/guest/plate.webp');
-                            if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
-                              e.currentTarget.dataset.fbApplied = '1';
-                              e.currentTarget.src = fallback;
-                            }
-                          }}
-                        />
-                      </div>
-
-                      {/* Title & Price */}
-                      <div className="min-w-0 pr-1">
-                        <h4 className="font-semibold text-[13.5px] text-[var(--text-main)] leading-snug line-clamp-1">
-                          {item.name}
-                        </h4>
-                        <span className="text-[11px] text-[var(--text-muted)] block">
-                          {venue.title}
-                        </span>
-                        <span className="text-[13px] font-bold text-[#a87b51] dark:text-[#A78BFA] block mt-0.5">
-                          {item.price || `${item.priceNum.toFixed(2)} ₼`}
-                        </span>
-                      </div>
+            <h3 className="font-fs-sans font-extralight text-[21px] tracking-[0.18em] uppercase text-[var(--fs-text)]">
+              Səbətiniz boşdur
+            </h3>
+            <p className="font-fs-serif text-[16px] text-[var(--fs-text-muted)] max-w-xs mx-auto leading-relaxed">
+              Restoran, spa və ya digər xidmətlərdən seçim edərək səbətə əlavə edə bilərsiniz.
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => navigate(menuPath)}
+                className="fs-btn-primary"
+              >
+                Menyuya Keçid
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+            {/* Left 7 Cols: Item Rows */}
+            <div className="lg:col-span-7 divide-y divide-[var(--fs-border)] border border-[var(--fs-border)] bg-[var(--fs-card)]">
+              {cartItemsDetailed.map(({ item, venue, quantity }) => (
+                <div
+                  key={item.id}
+                  className="p-4 sm:p-5 flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] overflow-hidden bg-[var(--fs-surface-subtle)] flex-none">
+                      <img
+                        src={resolveMediaUrl(item.image, '/media/guest/plate.webp')}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const fallback = resolveMediaUrl('/media/guest/plate.webp');
+                          if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+                            e.currentTarget.dataset.fbApplied = '1';
+                            e.currentTarget.src = fallback;
+                          }
+                        }}
+                      />
                     </div>
 
-                    {/* Stepper Pill: - qty + */}
-                    <div className="flex items-center gap-2 bg-[var(--bg-subcard)] border border-[var(--border-color)] rounded-full px-1.5 py-0.5 flex-none shadow-sm">
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-90 transition-transform"
-                        aria-label="Azalt"
-                      >
-                        –
-                      </button>
-                      <span className="text-[13px] font-bold text-[var(--text-main)] min-w-[16px] text-center tabular-nums">
-                        {quantity}
+                    <div className="min-w-0 pr-1 space-y-1">
+                      <h4 className="font-fs-serif text-[18px] sm:text-[19px] text-[var(--fs-text)] leading-snug line-clamp-1">
+                        {item.name}
+                      </h4>
+                      <span className="fs-kicker text-[var(--fs-text-muted)] block">
+                        {venue.title}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => addItem(item.id)}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-90 transition-transform"
-                        aria-label="Artır"
-                      >
-                        +
-                      </button>
+                      <span className="font-fs-sans text-[13.5px] font-bold tracking-[0.06em] text-[var(--fs-text)] block pt-0.5">
+                        {item.price || `${item.priceNum.toFixed(2)} ₼`}
+                      </span>
                     </div>
                   </div>
-                ))}
+
+                  {/* Rectangular Architectural Stepper */}
+                  <div className="flex items-center border border-[var(--fs-border-strong)] bg-[var(--fs-card)] h-9 px-1 flex-none">
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      className="w-7 h-full flex items-center justify-center text-sm font-bold text-[var(--fs-text)] hover:opacity-65"
+                      aria-label="Azalt"
+                    >
+                      –
+                    </button>
+                    <span className="font-fs-sans text-[13px] font-bold text-[var(--fs-text)] min-w-[22px] text-center tabular-nums">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addItem(item.id)}
+                      className="w-7 h-full flex items-center justify-center text-sm font-bold text-[var(--fs-text)] hover:opacity-65"
+                      aria-label="Artır"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right 5 Cols: Order Folio Summary */}
+            <div className="lg:col-span-5 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] p-6 sm:p-8 space-y-6 lg:sticky lg:top-8">
+              <div className="space-y-1 border-b border-[var(--fs-border)] pb-4">
+                <span className="fs-kicker text-[var(--fs-text-muted)] block">Order Summary</span>
+                <h2 className="font-fs-sans font-extralight text-[20px] tracking-[0.16em] uppercase text-[var(--fs-text)]">
+                  Hesab Xülasəsi
+                </h2>
               </div>
 
-              {/* Summary Card */}
-              <div className="rounded-[16px] bg-[var(--bg-card)] border border-[var(--border-color)] p-4 space-y-2.5 shadow-sm">
-                <div className="flex items-center justify-between text-[13px] text-[var(--text-muted)]">
+              <div className="space-y-3 font-fs-serif text-[16px]">
+                <div className="flex items-center justify-between text-[var(--fs-text-muted)]">
                   <span>Məhsulların cəmi</span>
-                  <span className="tabular-nums font-semibold">{totalPrice.toFixed(2)} ₼</span>
+                  <span className="font-fs-sans text-[14px] tabular-nums font-medium text-[var(--fs-text)]">
+                    {totalPrice.toFixed(2)} ₼
+                  </span>
                 </div>
 
                 {serviceFeePercent > 0 && (
-                  <div className="flex items-center justify-between text-[13px] text-[var(--text-muted)]">
+                  <div className="flex items-center justify-between text-[var(--fs-text-muted)]">
                     <span>Xidmət haqqı ({serviceFeePercent}%)</span>
-                    <span className="tabular-nums font-semibold">+{serviceFeeAmount.toFixed(2)} ₼</span>
+                    <span className="font-fs-sans text-[14px] tabular-nums font-medium text-[var(--fs-text)]">
+                      +{serviceFeeAmount.toFixed(2)} ₼
+                    </span>
                   </div>
                 )}
 
-                <div className="border-t border-[var(--border-color)] my-1" />
-
-                <div className="flex items-center justify-between text-[15px] font-bold text-[var(--text-main)]">
-                  <span>Yekun Ödəniləcək</span>
-                  <span className="tabular-nums font-bold text-[#a87b51] dark:text-[#A78BFA] text-lg">
+                <div className="border-t border-[var(--fs-border)] pt-3 flex items-center justify-between">
+                  <span className="font-fs-sans text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--fs-text)]">
+                    Yekun Ödəniləcək
+                  </span>
+                  <span className="font-fs-sans text-[19px] font-bold tabular-nums text-[var(--fs-text)]">
                     {grandTotal.toFixed(2)} ₼
                   </span>
                 </div>
               </div>
 
-              {/* Notice Box */}
-              <div className="rounded-[14px] bg-[var(--bg-subcard)]/70 border border-[var(--border-color)] p-3 text-xs text-[var(--text-muted)] leading-relaxed shadow-sm">
-                ℹ️ Sifarişiniz təsdiqləndikdən sonra dərhal otel sisteminə və mətbəxə ötürülür.
-              </div>
+              <p className="font-fs-serif text-[14.5px] text-[var(--fs-text-muted)] leading-relaxed border-t border-[var(--fs-border)] pt-4">
+                Sifarişiniz təsdiqləndikdən sonra dərhal otel sisteminə və mətbəxə ötürülür.
+              </p>
 
-              {/* Primary Direct Order Button */}
-              <div className="pt-1 space-y-2.5">
+              <div className="space-y-3">
                 <button
                   type="button"
                   onClick={() => setIsOrderModalOpen(true)}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#2A1D14] to-[#453123] dark:from-[#A78BFA] dark:to-[#8B5CF6] text-[#F6F1E8] dark:text-black text-sm font-extrabold shadow-xl shadow-[#2A1D14]/20 dark:shadow-[#A78BFA]/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="fs-btn-primary w-full py-4"
                 >
-                  <span>🛎️ Sifarişi Təsdiqlə ({grandTotal.toFixed(2)} ₼)</span>
+                  Sifarişi Təsdiqlə ({grandTotal.toFixed(2)} ₼)
                 </button>
 
-                {/* Secondary Alternative Action: WhatsApp */}
                 <a
                   href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
                     `Salam, otaq servisi üzrə sifarişim:\n\n${cartSummaryText}\n\nCəmi: ${grandTotal.toFixed(
@@ -356,232 +340,226 @@ export const CartPage: React.FC = () => {
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-semibold flex items-center justify-center gap-2 hover:border-[#25D366] active:scale-95 transition-all"
+                  className="fs-btn-outline w-full"
                 >
-                  <span className="text-[#25D366]">💬</span>
-                  <span>WhatsApp ilə Sifariş Göndər</span>
+                  WhatsApp ilə Sifariş Göndər
                 </a>
 
-                {/* Bottom Row Actions */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => setIsInquiryOpen(true)}
-                    className="py-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                    className="fs-btn-outline w-full !px-2"
                   >
-                    📝 Xüsusi İstək
+                    Xüsusi İstək
                   </button>
-                  <a
-                    href={`tel:${displayPhone}`}
-                    className="py-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
-                  >
-                    📞 Resepşna Zəng
+                  <a href={`tel:${displayPhone}`} className="fs-btn-outline w-full !px-2">
+                    Resepşna Zəng
                   </a>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </main>
 
-        {/* ===================== 3. DIRECT ORDER SUBMISSION MODAL ===================== */}
-        <AnimatePresence>
-          {isOrderModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
-              <motion.div
-                initial={{ opacity: 0, y: 60 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 60 }}
-                className="w-full max-w-[480px] bg-[var(--bg-main)] border border-[var(--border-color)] rounded-t-[28px] sm:rounded-[28px] p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
-              >
-                {completedOrder ? (
-                  // Receipt View on Success
-                  <div className="text-center py-4 space-y-4">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-3xl font-bold">
-                      ✓
+      {/* ===================== 3. DIRECT ORDER SUBMISSION MODAL ===================== */}
+      <AnimatePresence>
+        {isOrderModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[var(--fs-backdrop)] backdrop-blur-[2px]"
+              onClick={handleCloseOrderModal}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative z-10 w-full max-w-[500px] bg-[var(--fs-card)] border-t sm:border border-[var(--fs-border)] rounded-none p-6 sm:p-8 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-[var(--fs-text)]"
+            >
+              {completedOrder ? (
+                <div className="text-center py-4 space-y-5">
+                  <div className="w-14 h-14 mx-auto border border-[var(--fs-border-strong)] text-[var(--fs-text)] flex items-center justify-center text-2xl">
+                    ✓
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="font-fs-sans font-extralight text-[22px] tracking-[0.16em] uppercase text-[var(--fs-text)]">
+                      Sifarişiniz Qəbul Edildi
+                    </h3>
+                    <p className="font-fs-serif text-[15px] text-[var(--fs-text-muted)]">
+                      Sifariş dərhal otel resepsiyonuna və mətbəxə çatdırıldı.
+                    </p>
+                  </div>
+
+                  <div className="p-5 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] text-left space-y-2.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="fs-kicker text-[var(--fs-text-muted)]">Sifariş №</span>
+                      <span className="font-mono font-bold text-[var(--fs-text)]">
+                        #{completedOrder.orderNumber}
+                      </span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="fs-kicker text-[var(--fs-text-muted)]">Otaq / Masa</span>
+                      <span className="font-semibold text-[var(--fs-text)]">
+                        {completedOrder.roomOrTableNumber}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="fs-kicker text-[var(--fs-text-muted)]">Məbləğ</span>
+                      <span className="font-bold text-[var(--fs-text)]">
+                        {completedOrder.totalAmount.toFixed(2)} ₼
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t border-[var(--fs-border)]">
+                      <span className="fs-kicker text-[var(--fs-text-muted)]">Status</span>
+                      <span className="fs-kicker px-2 py-0.5 border border-[var(--fs-border-strong)]">
+                        Yeni (Gözləmədə)
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCloseOrderModal}
+                    className="fs-btn-primary w-full"
+                  >
+                    Tamam və Menyuya Qayıt
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleOrderSubmit} className="space-y-5">
+                  <div className="flex items-start justify-between pb-4 border-b border-[var(--fs-border)]">
                     <div>
-                      <h3 className="text-xl font-bold font-hotel-serif text-[var(--text-main)]">
-                        Sifarişiniz Qəbul Edildi!
+                      <h3 className="font-fs-sans font-extralight text-[20px] tracking-[0.16em] uppercase text-[var(--fs-text)]">
+                        Sifarişi Təsdiqləyin
                       </h3>
-                      <p className="text-xs text-[var(--text-muted)] mt-1">
-                        Sifariş dərhal otel resepsiyonuna və mətbəxə çatdırıldı.
+                      <p className="font-fs-serif text-[15px] text-[var(--fs-text-muted)] mt-0.5">
+                        {totalCount} məhsul · Cəmi: {grandTotal.toFixed(2)} ₼
                       </p>
                     </div>
-
-                    <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-left space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-[var(--text-muted)]">Sifariş №:</span>
-                        <span className="font-mono font-bold text-[#a87b51] dark:text-[#A78BFA]">
-                          #{completedOrder.orderNumber}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[var(--text-muted)]">Otaq / Masa:</span>
-                        <span className="font-semibold text-[var(--text-main)]">
-                          {completedOrder.roomOrTableNumber}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[var(--text-muted)]">Məbləğ:</span>
-                        <span className="font-bold text-[var(--text-main)]">
-                          {completedOrder.totalAmount.toFixed(2)} ₼
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[var(--text-muted)]">Status:</span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 font-bold text-[10px]">
-                          Yeni (Gözləmədə)
-                        </span>
-                      </div>
-                    </div>
-
                     <button
                       type="button"
-                      onClick={handleCloseOrderModal}
-                      className="w-full py-3.5 rounded-2xl bg-[#a87b51] dark:bg-[#A78BFA] text-white dark:text-black font-bold text-xs shadow-md active:scale-95 transition-transform"
+                      onClick={() => setIsOrderModalOpen(false)}
+                      className="w-8 h-8 border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] flex items-center justify-center text-sm text-[var(--fs-text-muted)] hover:text-[var(--fs-text)]"
                     >
-                      Tamam və Menyuya Qayıt
+                      ✕
                     </button>
                   </div>
-                ) : (
-                  // Form View
-                  <form onSubmit={handleOrderSubmit} className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)]">
-                      <div>
-                        <h3 className="text-base font-bold text-[var(--text-main)] font-hotel-serif">
-                          Sifarişi Təsdiqləyin
-                        </h3>
-                        <p className="text-[11px] text-[var(--text-muted)]">
-                          {totalCount} məhsul · Cəmi: {grandTotal.toFixed(2)} ₼
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsOrderModalOpen(false)}
-                        className="w-8 h-8 rounded-full bg-[var(--bg-subcard)] flex items-center justify-center text-sm text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                      >
-                        ✕
-                      </button>
-                    </div>
 
-                    {/* Order Type Tabs */}
-                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)]">
-                      <button
-                        type="button"
-                        onClick={() => setOrderType(OrderType.RoomService)}
-                        className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                          orderType === OrderType.RoomService
-                            ? 'bg-[var(--bg-main)] text-[var(--text-main)] shadow-sm'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                        }`}
-                      >
-                        🛎️ Otaq Xidməti
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOrderType(OrderType.RestaurantTable)}
-                        className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                          orderType === OrderType.RestaurantTable
-                            ? 'bg-[var(--bg-main)] text-[var(--text-main)] shadow-sm'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                        }`}
-                      >
-                        🍽️ Restoran Masası
-                      </button>
-                    </div>
+                  {/* Architectural Segmented Order Type */}
+                  <div className="grid grid-cols-2 border border-[var(--fs-border-strong)]">
+                    <button
+                      type="button"
+                      onClick={() => setOrderType(OrderType.RoomService)}
+                      className={`py-2.5 text-[10.5px] font-bold uppercase tracking-[0.18em] transition-colors ${
+                        orderType === OrderType.RoomService
+                          ? 'bg-[var(--fs-inv-bg)] text-[var(--fs-inv-text)]'
+                          : 'bg-transparent text-[var(--fs-text-muted)] hover:text-[var(--fs-text)]'
+                      }`}
+                    >
+                      Otaq Xidməti
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderType(OrderType.RestaurantTable)}
+                      className={`py-2.5 text-[10.5px] font-bold uppercase tracking-[0.18em] transition-colors ${
+                        orderType === OrderType.RestaurantTable
+                          ? 'bg-[var(--fs-inv-bg)] text-[var(--fs-inv-text)]'
+                          : 'bg-transparent text-[var(--fs-text-muted)] hover:text-[var(--fs-text)]'
+                      }`}
+                    >
+                      Restoran Masası
+                    </button>
+                  </div>
 
-                    {/* Room or Table Input (Required) */}
+                  <div>
+                    <label className="block fs-kicker text-[var(--fs-text)] mb-2">
+                      {orderType === OrderType.RoomService ? 'Otaq Nömrəniz *' : 'Masa Nömrəniz *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={roomOrTableNumber}
+                      onChange={(e) => setRoomOrTableNumber(e.target.value)}
+                      placeholder={orderType === OrderType.RoomService ? 'Məsələn: 304' : 'Məsələn: Masa 14'}
+                      className="fs-input px-3.5 py-2.5 text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-[11px] font-bold text-[var(--text-main)] uppercase tracking-wider mb-1.5">
-                        {orderType === OrderType.RoomService ? 'Otaq Nömrəniz *' : 'Masa Nömrəniz *'}
+                      <label className="block fs-kicker text-[var(--fs-text-muted)] mb-2">
+                        Adınız (İxtiyari)
                       </label>
                       <input
                         type="text"
-                        required
-                        value={roomOrTableNumber}
-                        onChange={(e) => setRoomOrTableNumber(e.target.value)}
-                        placeholder={orderType === OrderType.RoomService ? 'Məsələn: 304' : 'Məsələn: Masa 14'}
-                        className="w-full px-3.5 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-sm text-[var(--text-main)] focus:outline-none focus:border-[#a87b51] dark:focus:border-[#A78BFA]"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Məs: Rəvan"
+                        className="fs-input px-3.5 py-2.5 text-sm"
                       />
                     </div>
-
-                    {/* Guest Name & Phone */}
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-medium text-[var(--text-muted)] mb-1">
-                          Adınız (İxtiyari)
-                        </label>
-                        <input
-                          type="text"
-                          value={guestName}
-                          onChange={(e) => setGuestName(e.target.value)}
-                          placeholder="Məs: Rəvan"
-                          className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[#a87b51] dark:focus:border-[#A78BFA]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-medium text-[var(--text-muted)] mb-1">
-                          Əlaqə Telefonu
-                        </label>
-                        <input
-                          type="tel"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          placeholder="+994 50 ..."
-                          className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[#a87b51] dark:focus:border-[#A78BFA]"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Notes / Special Instructions */}
                     <div>
-                      <label className="block text-[11px] font-medium text-[var(--text-muted)] mb-1">
-                        Xüsusi Qeydlər və İstəklər
+                      <label className="block fs-kicker text-[var(--fs-text-muted)] mb-2">
+                        Əlaqə Telefonu
                       </label>
-                      <textarea
-                        rows={2}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Məsələn: Çəngəl-bıçaq əlavə edin, sous ayrıca qoyulsun..."
-                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[#a87b51] dark:focus:border-[#A78BFA] resize-none"
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="+994 50 ..."
+                        className="fs-input px-3.5 py-2.5 text-sm"
                       />
                     </div>
+                  </div>
 
-                    {/* Error Notice */}
-                    {orderError && (
-                      <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-500 text-xs">
-                        {orderError}
-                      </div>
+                  <div>
+                    <label className="block fs-kicker text-[var(--fs-text-muted)] mb-2">
+                      Xüsusi Qeydlər və İstəklər
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Məsələn: Çəngəl-bıçaq əlavə edin, sous ayrıca qoyulsun..."
+                      className="fs-input p-3.5 text-sm resize-none"
+                    />
+                  </div>
+
+                  {orderError && (
+                    <div className="p-3.5 bg-[#fef0f0] border border-[#fa8f8f] text-[#310202] text-xs">
+                      {orderError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="fs-btn-primary w-full py-3.5 disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span>Sifarişi Göndər ({grandTotal.toFixed(2)} ₼)</span>
                     )}
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-                    {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full py-3.5 rounded-2xl bg-[#a87b51] dark:bg-[#A78BFA] text-white dark:text-black font-extrabold text-xs shadow-lg shadow-[#a87b51]/25 dark:shadow-[#A78BFA]/25 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
-                    >
-                      {isSubmitting ? (
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <span>✓ Sifarişi Göndər ({grandTotal.toFixed(2)} ₼)</span>
-                      )}
-                    </button>
-                  </form>
-                )}
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* ===================== 4. INQUIRY MODAL ===================== */}
-        <InquirySheet
-          isOpen={isInquiryOpen}
-          onClose={() => setIsInquiryOpen(false)}
-          t={t.inquiry}
-          slug={hotelSlug}
-        />
-      </div>
+      <InquirySheet
+        isOpen={isInquiryOpen}
+        onClose={() => setIsInquiryOpen(false)}
+        t={t.inquiry}
+        slug={hotelSlug}
+      />
     </div>
   );
 };

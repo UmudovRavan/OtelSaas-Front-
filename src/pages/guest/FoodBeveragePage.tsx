@@ -14,6 +14,10 @@ import {
 import { InquirySheet } from './components/InquirySheet';
 import { useHub, useCatalogCategory, useHotelPortal } from '../../hooks/useHotelData';
 import { resolveMediaUrl } from '../../utils/media';
+import { useGuestDocumentMeta } from '../../utils/documentHead';
+import { useLanguage } from '../../context/LanguageContext';
+import { tr, SupportedLang } from '../../utils/i18n';
+import { GuestLangPill } from './components/GuestLangPill';
 import { HubType } from '../../types/api';
 
 export const FoodBeveragePage: React.FC = () => {
@@ -23,8 +27,15 @@ export const FoodBeveragePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [selectedLang] = useState<Language>('az');
+  const { currentLang } = useLanguage();
+  const selectedLang = (currentLang as Language) || 'az';
   const [liveHotel, setLiveHotel] = useState<PublicHotelProfile | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const saved = localStorage.getItem('fs_guest_dark');
+    document.documentElement.classList.toggle('fs-dark', saved === '1');
+  }, []);
 
   const isHubRoute = location.pathname.includes('/g/');
   const isCategoryRoute = location.pathname.includes('/c/');
@@ -33,14 +44,18 @@ export const FoodBeveragePage: React.FC = () => {
   const { data: portalData } = useHotelPortal(hotelSlug);
   const matchingFoodHub = portalData?.hubs?.find((h) => h.hubType === HubType.FoodAndBeverage);
   const hubCodeOrId = isHubRoute
-    ? (code || matchingFoodHub?.code || matchingFoodHub?.externalId || '192')
-    : (matchingFoodHub?.code || matchingFoodHub?.externalId || '192');
+    ? code || matchingFoodHub?.code || matchingFoodHub?.externalId || '192'
+    : matchingFoodHub?.code || matchingFoodHub?.externalId || '192';
 
   // Dynamic Live Hub (Food & Beverage / Dining)
   const { data: hubData } = useHub(hotelSlug, hubCodeOrId);
 
-  const hubTitle = hubData?.title || hubData?.titleTr?.az || (selectedLang === 'az' ? 'Qida və içki' : 'Dining');
-  const hubSubtitle = hubData?.subtitle || hubData?.subtitleTr?.az || '';
+  const hubTitle = tr(
+    hubData?.titleTr,
+    hubData?.title || (selectedLang === 'ru' ? 'Еда и напитки' : selectedLang === 'en' ? 'Food & Beverage' : 'Qida və içki'),
+    selectedLang as SupportedLang
+  );
+  const hubSubtitle = tr(hubData?.subtitleTr, hubData?.subtitle || '', selectedLang as SupportedLang);
   const hubCover = resolveMediaUrl(hubData?.coverImageUrl, '/media/guest/restaurant-table.webp');
 
   const liveVenues: VenueCategory[] = React.useMemo(() => {
@@ -48,8 +63,8 @@ export const FoodBeveragePage: React.FC = () => {
       return hubData.categories.map((c) => ({
         id: c.id,
         code: String(c.externalId || c.id),
-        title: c.title,
-        subtitle: c.subtitle || '',
+        title: tr(c.titleTr, c.title, selectedLang as SupportedLang),
+        subtitle: tr(c.subtitleTr, c.subtitle || '', selectedLang as SupportedLang),
         cover: resolveMediaUrl(c.imageUrl, hubCover),
         hours: c.workingHours || '08:00–23:00',
         type: 'restaurant',
@@ -57,7 +72,7 @@ export const FoodBeveragePage: React.FC = () => {
       }));
     }
     return isDemoHotel ? foodBeverageVenues : [];
-  }, [hubData, hotelSlug, hubCover, isDemoHotel]);
+  }, [hubData, hotelSlug, hubCover, isDemoHotel, selectedLang]);
 
   // Active venue selection (only if in category view /c/:code)
   const [activeVenue, setActiveVenue] = useState<VenueCategory | null>(() => {
@@ -105,18 +120,26 @@ export const FoodBeveragePage: React.FC = () => {
     if (catDetail?.items && catDetail.items.length > 0) {
       return catDetail.items.map((it) => ({
         id: it.id,
-        name: it.title,
+        name: tr(it.titleTr, it.title, selectedLang as SupportedLang),
         nameEn: it.titleTr?.en || it.title,
         nameRu: it.titleTr?.ru || it.title,
         price: `${it.price} ₼`,
         priceNum: it.price,
-        badge: it.badge || it.badgeTr?.az || undefined,
+        badge: tr(it.badgeTr, it.badge || '', selectedLang as SupportedLang) || undefined,
         image: it.imageUrl ? resolveMediaUrl(it.imageUrl) : undefined,
-        desc: it.description || it.subtitle || undefined,
+        desc: tr(it.descriptionTr, it.description || it.subtitle || '', selectedLang as SupportedLang) || undefined,
       }));
     }
-    return activeVenue?.items || [];
-  }, [catDetail, activeVenue]);
+    return (activeVenue?.items || []).map((it) => ({
+      ...it,
+      name:
+        selectedLang === 'en' && it.nameEn
+          ? it.nameEn
+          : selectedLang === 'ru' && it.nameRu
+          ? it.nameRu
+          : it.name,
+    }));
+  }, [catDetail, activeVenue, selectedLang]);
 
   // Active item detail modal
   const [activeItem, setActiveItem] = useState<FoodBeverageItem | null>(null);
@@ -140,13 +163,18 @@ export const FoodBeveragePage: React.FC = () => {
   }, [hotelSlug, selectedLang]);
 
   const homePath = slug ? `/hotel/${slug}` : '/';
-  const displayPhone = liveHotel?.phone || (isDemoHotel ? hotel.phone : '');
   const displayWhatsapp = (liveHotel?.whatsApp || (isDemoHotel ? hotel.whatsapp : '')).replace(/[^0-9]/g, '');
+
+  const hotelTitleName = liveHotel?.name || portalData?.name || (isDemoHotel ? hotel.name : '');
+  const pageTabTitle = activeVenue ? activeVenue.title : hubTitle;
+  useGuestDocumentMeta(
+    hotelTitleName ? `${pageTabTitle} | ${hotelTitleName}` : pageTabTitle,
+    liveHotel?.logoUrl || portalData?.logoUrl || (isDemoHotel ? hotel.logo : undefined)
+  );
 
   const handleVenueClick = (venue: VenueCategory) => {
     setActiveVenue(venue);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // update URL gracefully
     if (slug) {
       navigate(`/${hotelSlug}/hotel/c/${venue.code}`, { replace: false });
     } else {
@@ -164,450 +192,417 @@ export const FoodBeveragePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-hotel-sans flex justify-center selection:bg-[#A78BFA] selection:text-black transition-colors duration-200">
-      {/* Main Responsive Column */}
-      <div className="w-full max-w-[540px] min-h-screen bg-[var(--bg-main)] flex flex-col relative pb-10 border-x border-[var(--border-color)] overflow-x-hidden shadow-2xl">
-        
-        {/* ===================== 1. HERO HEADER (1:1 with Reference) ===================== */}
-        <header className="relative w-full h-[178px] overflow-hidden bg-[#181424] flex-none">
-          {/* Cover image: Restaurant Table cover for main list, or Venue specific cover */}
-          <img
-            src={resolveMediaUrl(activeVenue ? activeVenue.cover : hubCover, '/media/guest/restaurant-table.webp')}
-            alt={activeVenue ? activeVenue.title : hubTitle}
-            className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
-          />
+    <div className="fs-portal min-h-screen flex flex-col selection:bg-black selection:text-white pb-24">
+      {/* ===================== 1. FULL-BLEED ARCHITECTURAL HERO ===================== */}
+      <header className="relative w-full h-[240px] sm:h-[320px] lg:h-[380px] overflow-hidden bg-[#0F0F0F] flex-none">
+        <img
+          src={resolveMediaUrl(activeVenue ? activeVenue.cover : hubCover, '/media/guest/restaurant-table.webp')}
+          alt={activeVenue ? activeVenue.title : hubTitle}
+          onError={(e) => {
+            const fallback = resolveMediaUrl('/media/guest/restaurant-table.webp');
+            if (!e.currentTarget.dataset.fbApplied && e.currentTarget.src !== fallback) {
+              e.currentTarget.dataset.fbApplied = '1';
+              e.currentTarget.src = fallback;
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
+        />
 
-          {/* Dark luxury gradient shade matching .hotel_headShade__OttbO */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(8,12,22,0.65) 0%, rgba(8,12,22,0.25) 45%, rgba(8,12,22,0.85) 100%)',
-            }}
-          />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.16) 45%, rgba(0,0,0,0.78) 100%)',
+          }}
+        />
 
-          {/* Top Bar with Back & Home Buttons */}
-          <div className="absolute top-[14px] left-[14px] right-[14px] z-20 flex items-center justify-between pointer-events-auto">
-            {/* Back button */}
-            <button
-              type="button"
-              onClick={activeVenue ? handleBackFromVenue : () => navigate(homePath)}
-              aria-label="Geri"
-              className="w-[36px] h-[36px] rounded-full bg-[#101826]/70 border border-white/25 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all shadow-sm"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
+        {/* Top Navigation Controls */}
+        <div className="relative z-20 max-w-[1280px] mx-auto px-4 sm:px-8 pt-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={activeVenue ? handleBackFromVenue : () => navigate(homePath)}
+            aria-label="Geri"
+            className="w-10 h-10 bg-black/40 border border-white/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
 
-            {/* Home button */}
+          <div className="flex items-center gap-2">
+            <GuestLangPill />
             <button
               type="button"
               onClick={() => navigate(homePath)}
               aria-label="Ana səhifə"
-              className="w-[36px] h-[36px] rounded-full bg-[#101826]/70 border border-white/25 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all shadow-sm"
+              className="w-10 h-10 bg-black/40 border border-white/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors"
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
                 <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               </svg>
             </button>
           </div>
+        </div>
 
-          {/* Page Title at bottom-left in Cormorant Garamond Serif */}
-          <div className="absolute bottom-[16px] left-[18px] right-[18px] z-20">
-            <h1
-              className="font-hotel-serif text-[28px] sm:text-[32px] leading-none font-semibold text-white tracking-wide"
-              style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}
-            >
-              {activeVenue ? activeVenue.title : hubTitle}
-            </h1>
-            {(activeVenue?.subtitle || (!activeVenue && hubSubtitle)) && (
-              <p
-                className="text-[12px] sm:text-[13px] text-white/85 font-hotel-sans mt-1 leading-snug"
-                style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }}
-              >
-                {activeVenue ? activeVenue.subtitle : hubSubtitle}
-              </p>
-            )}
-          </div>
-        </header>
+        {/* Bottom-Aligned Editorial Heading */}
+        <div className="absolute inset-x-0 bottom-0 z-20 max-w-[1140px] mx-auto px-4 sm:px-8 pb-6 sm:pb-9">
+          <p className="fs-eyebrow text-[16px] sm:text-[18px] text-white/85 mb-1">
+            {activeVenue ? activeVenue.hours || 'Culinary Experience' : 'Restaurants & Bars'}
+          </p>
+          <h1 className="font-fs-sans font-extralight text-[26px] sm:text-[34px] lg:text-[40px] leading-[1.2] tracking-[0.18em] uppercase text-white">
+            {activeVenue ? activeVenue.title : hubTitle}
+          </h1>
+          {(activeVenue?.subtitle || (!activeVenue && hubSubtitle)) && (
+            <p className="font-fs-serif text-[15px] sm:text-[17px] text-white/85 mt-1.5 max-w-2xl leading-snug">
+              {activeVenue ? activeVenue.subtitle : hubSubtitle}
+            </p>
+          )}
+        </div>
+      </header>
 
-        {/* ===================== 2. SHEET BODY ===================== */}
-        <div className="relative z-10 -mt-2.5 rounded-t-[22px] bg-[var(--bg-main)] pt-3 px-3.5 flex-1 flex flex-col">
-
-          {/* VIEW A: RESTAURANT / BAR CATEGORIES LIST */}
-          {!activeVenue && (
-            <div className="space-y-2.5 pt-1">
-              {liveVenues.length > 0 ? (
-                liveVenues.map((venue) => (
+      {/* ===================== 2. MAIN RESPONSIVE CONTENT ===================== */}
+      <main className="flex-1 w-full max-w-[1140px] mx-auto px-4 sm:px-8 py-8 sm:py-12">
+        {/* VIEW A: RESTAURANT / BAR CATEGORIES GALLERY */}
+        {!activeVenue && (
+          <div className="space-y-10">
+            {liveVenues.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-[30px]">
+                {liveVenues.map((venue) => (
                   <button
                     key={venue.id}
                     type="button"
                     onClick={() => handleVenueClick(venue)}
-                    className="w-full rounded-[14px] bg-[var(--bg-card)] border border-[var(--border-color)] p-2 sm:p-2.5 flex items-center justify-between gap-3 text-left shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.18)] hover:border-[#A78BFA]/50 active:scale-[0.99] transition-all group"
+                    className="w-full rounded-none bg-[var(--fs-card)] border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] flex flex-col text-left transition-colors group focus:outline-none"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Thumbnail Image 104x70px */}
-                      <div className="w-[104px] h-[70px] sm:w-[110px] sm:h-[72px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/40">
+                    <div className="relative w-full aspect-[16/10] overflow-hidden bg-[var(--fs-surface-subtle)]">
+                      <img
+                        src={resolveMediaUrl(venue.cover, '/media/guest/restaurant-table.webp')}
+                        alt={venue.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4 w-full">
+                      <div className="space-y-2">
+                        {venue.hours && (
+                          <span className="fs-kicker text-[var(--fs-text-muted)] block">
+                            {venue.hours}
+                          </span>
+                        )}
+                        <h3 className="font-fs-sans font-bold text-[14px] sm:text-[15px] tracking-[0.20em] uppercase text-[var(--fs-text)]">
+                          {venue.title}
+                        </h3>
+                        {venue.subtitle && (
+                          <p className="font-fs-serif text-[15.5px] text-[var(--fs-text-muted)] leading-relaxed line-clamp-2">
+                            {venue.subtitle}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="pt-2">
+                        <span className="fs-link-underlined text-[var(--fs-text)]">
+                          <span>
+                            {selectedLang === 'ru'
+                              ? 'Открыть меню'
+                              : selectedLang === 'en'
+                              ? 'View Menu'
+                              : 'Menyuya Bax'}
+                          </span>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="m9 18 6-6-6-6" />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="py-16 px-6 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] flex flex-col items-center justify-center text-center space-y-3">
+                <h3 className="font-fs-sans font-extralight text-[20px] tracking-[0.18em] uppercase text-[var(--fs-text)]">
+                  {selectedLang === 'az' ? 'Məkan əlavə edilməyib' : selectedLang === 'ru' ? 'Заведения не добавлены' : 'No venues added'}
+                </h3>
+                <p className="font-fs-serif text-[15.5px] text-[var(--fs-text-muted)] max-w-sm">
+                  {selectedLang === 'az' ? 'Bu bölmədə hələlik heç bir restoran və ya kafe əlavə edilməyib.' : 'No restaurant or cafe added yet.'}
+                </p>
+              </div>
+            )}
+
+            {/* Concierge Room Service Strip */}
+            <div className="p-6 sm:p-8 bg-[var(--fs-surface-subtle)] border border-[var(--fs-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <div className="space-y-1">
+                <span className="fs-kicker text-[var(--fs-text-muted)] block">In-Room Dining</span>
+                <h4 className="font-fs-serif text-[21px] text-[var(--fs-text)]">
+                  {selectedLang === 'ru'
+                    ? 'Обслуживание номеров и бронирование'
+                    : selectedLang === 'en'
+                    ? 'Room Service & Reservations'
+                    : 'Otaq Xidməti & Rezervasiya'}
+                </h4>
+                <p className="font-fs-serif text-[15px] text-[var(--fs-text-muted)]">
+                  {selectedLang === 'ru'
+                    ? 'Круглосуточно · внутренний номер: 3'
+                    : selectedLang === 'en'
+                    ? '24/7 service · internal ext: 3'
+                    : '24 saat fasiləsiz daxili zəng: 3'}
+                </p>
+              </div>
+              <a
+                href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
+                  'Salam, otaq xidməti və ya restoran rezervasiyası ilə bağlı müraciət etmək istəyirəm.'
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fs-btn-outline shrink-0"
+              >
+                {selectedLang === 'ru'
+                  ? 'Бронь в WhatsApp'
+                  : selectedLang === 'en'
+                  ? 'WhatsApp Booking'
+                  : 'WhatsApp Rezervasiya'}
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW B: VENUE DETAIL / MENU ITEMS LIST */}
+        {activeVenue && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--fs-border)]">
+              <span className="fs-kicker text-[var(--fs-text-muted)]">
+                {displayItems.length}{' '}
+                {selectedLang === 'ru' ? 'позиций' : selectedLang === 'en' ? 'items' : 'təklif mövcuddur'}
+              </span>
+              <button
+                type="button"
+                onClick={handleBackFromVenue}
+                className="fs-link-underlined text-[var(--fs-text)]"
+              >
+                {selectedLang === 'ru'
+                  ? '← Все рестораны'
+                  : selectedLang === 'en'
+                  ? '← All restaurants'
+                  : '← Bütün restoranlar'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {displayItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => setActiveItem(item)}
+                  className="w-full rounded-none bg-[var(--fs-card)] border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] p-3.5 sm:p-4 flex items-center justify-between gap-4 cursor-pointer transition-colors group"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    {item.image && (
+                      <div className="w-[88px] h-[76px] sm:w-[100px] sm:h-[84px] flex-none rounded-none overflow-hidden bg-[var(--fs-surface-subtle)]">
                         <img
-                          src={resolveMediaUrl(venue.cover, '/media/guest/restaurant-table.webp')}
-                          alt={venue.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          src={resolveMediaUrl(item.image, '/media/guest/plate.webp')}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
                       </div>
+                    )}
 
-                      {/* Venue Title & Subtitle */}
-                      <div className="min-w-0 pr-1">
-                        <h3 className="font-hotel-serif text-[17px] sm:text-[18px] font-bold tracking-[0.035em] uppercase text-[var(--text-main)] truncate">
-                          {venue.title}
-                        </h3>
-                        <p className="text-[12px] text-[var(--text-muted)] font-hotel-sans mt-0.5 leading-snug line-clamp-1">
-                          {venue.subtitle}
-                        </p>
+                    <div className="min-w-0 pr-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-fs-serif text-[18px] sm:text-[19px] font-medium text-[var(--fs-text)] leading-snug">
+                          {item.name}
+                        </h4>
+                        {item.badge && (
+                          <span className="text-[9.5px] font-bold uppercase tracking-[0.16em] px-2 py-0.5 border border-[var(--fs-border-strong)] text-[var(--fs-text)] whitespace-nowrap">
+                            {item.badge}
+                          </span>
+                        )}
                       </div>
-                    </div>
 
-                    {/* Right Chevron > */}
-                    <span className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] group-hover:translate-x-0.5 transition-all pr-1 flex-none">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
-                  <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3 text-[#A78BFA]">
-                    <span className="text-2xl">🍽️</span>
-                  </div>
-                  <h3 className="font-hotel-serif text-[18px] font-semibold text-[var(--text-main)] mb-1">
-                    {selectedLang === 'az' ? 'Məkan əlavə edilməyib' : selectedLang === 'ru' ? 'Заведения не добавлены' : 'No venues added'}
-                  </h3>
-                  <p className="text-[12.5px] text-[var(--text-muted)] max-w-[280px]">
-                    {selectedLang === 'az' ? 'Bu bölmədə hələlik heç bir restoran və ya kafe əlavə edilməyib.' : 'No restaurant or cafe added yet.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Quick WhatsApp / Reception Contact Box */}
-              <div className="pt-3 pb-2">
-                <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-xl bg-[#A78BFA]/15 text-[#A78BFA] flex items-center justify-center text-sm font-bold">
-                      🛎️
-                    </span>
-                    <div>
-                      <span className="text-xs font-bold text-[var(--text-main)] block">
-                        Otaq Xidməti & Rezervasiya
-                      </span>
-                      <span className="text-[11px] text-[var(--text-muted)] block">
-                        24 saat fasiləsiz daxili zəng: 3
-                      </span>
-                    </div>
-                  </div>
-                  <a
-                    href={`https://wa.me/${displayWhatsapp}?text=${encodeURIComponent(
-                      'Salam, otaq xidməti və ya restoran rezervasiyası ilə bağlı müraciət etmək istəyirəm.'
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-[#25D366] text-white text-[11px] font-bold shadow-sm active:scale-95 transition-transform"
-                  >
-                    WhatsApp
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW B: VENUE DETAIL / MENU ITEMS LIST (Shirvan, SAQI, Elixir, Strike, etc.) */}
-          {activeVenue && (
-            <div className="space-y-2.5 pt-1">
-              {/* Venue Sub-bar: category switch or back notice */}
-              <div className="flex items-center justify-between pb-1 text-xs text-[var(--text-muted)]">
-                <span className="font-medium">
-                  {displayItems.length} təklif mövcuddur
-                </span>
-                <button
-                  type="button"
-                  onClick={handleBackFromVenue}
-                  className="text-[#A78BFA] hover:underline font-semibold flex items-center gap-1"
-                >
-                  ← Bütün restoranlar
-                </button>
-              </div>
-
-              {/* Venue Items List */}
-              <div className="space-y-2">
-                {displayItems.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setActiveItem(item)}
-                    className="w-full rounded-[14px] bg-[var(--bg-card)] border border-[var(--border-color)] p-2.5 flex items-center justify-between gap-3 cursor-pointer shadow-[0_2px_6px_rgba(0,0,0,0.03)] hover:border-[#A78BFA]/40 active:scale-[0.99] transition-all group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Product Thumbnail (if image exists) */}
-                      {item.image && (
-                        <div className="w-[84px] h-[64px] sm:w-[92px] sm:h-[68px] flex-none rounded-[10px] overflow-hidden bg-black/10 dark:bg-black/30">
-                          <img
-                            src={resolveMediaUrl(item.image, '/media/guest/plate.webp')}
-                            alt={item.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                        </div>
+                      {item.desc && (
+                        <p className="font-fs-serif text-[14px] text-[var(--fs-text-muted)] line-clamp-2 leading-relaxed">
+                          {item.desc}
+                        </p>
                       )}
 
-                      {/* Title, Description, Badge & Price */}
-                      <div className="min-w-0 pr-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="font-semibold text-xs sm:text-[13px] text-[var(--text-main)] group-hover:text-[#A78BFA] transition-colors leading-tight">
-                            {item.name}
-                          </h4>
-                          {item.badge && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#A78BFA]/20 text-[#A78BFA] border border-[#A78BFA]/30 whitespace-nowrap">
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-
-                        {item.desc && (
-                          <p className="text-[11px] text-[var(--text-muted)] font-hotel-sans mt-0.5 line-clamp-2 leading-relaxed">
-                            {item.desc}
-                          </p>
-                        )}
-
-                        {item.price && (
-                          <span className="text-xs font-bold text-[#A78BFA] block mt-1">
-                            {item.price}
-                          </span>
-                        )}
-                      </div>
+                      {item.price && (
+                        <span className="font-fs-sans text-[13px] font-bold tracking-[0.08em] text-[var(--fs-text)] block pt-0.5">
+                          {item.price}
+                        </span>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Stepper Pill or Plus Button (Exact 1:1 with Screenshot 1) */}
-                    <div className="flex items-center gap-1.5 flex-none">
-                      {(cart[item.id] || 0) > 0 ? (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-[34px] flex flex-col items-center justify-between rounded-full bg-[#a87b51] dark:bg-[#A78BFA] text-white dark:text-black py-1 px-0.5 shadow-[0_4px_12px_rgba(168,123,81,0.35)] select-none flex-none"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.id)}
-                            aria-label="Azalt"
-                            className="w-full h-[24px] flex items-center justify-center font-bold text-base leading-none active:scale-90 hover:opacity-85 transition-transform"
-                          >
-                            –
-                          </button>
-                          <span className="font-hotel-sans font-extrabold text-[13px] leading-none py-1 tabular-nums">
-                            {cart[item.id]}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => addItem(item.id)}
-                            aria-label="Artır"
-                            className="w-full h-[24px] flex items-center justify-center font-bold text-base leading-none active:scale-90 hover:opacity-85 transition-transform"
-                          >
-                            +
-                          </button>
-                        </div>
-                      ) : (
+                  {/* Stepper or Add Button */}
+                  <div className="flex items-center flex-none">
+                    {(cart[item.id] || 0) > 0 ? (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-[34px] flex flex-col items-center justify-between bg-[var(--fs-inv-bg)] text-[var(--fs-inv-text)] border border-[var(--fs-border-strong)] py-1 select-none"
+                      >
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addItem(item.id);
-                          }}
-                          aria-label="Səbətə əlavə et"
-                          className="w-8 h-8 rounded-full bg-[#f4ece1] dark:bg-[#2c2638] text-[#a87b51] dark:text-[#A78BFA] flex items-center justify-center font-bold text-lg hover:scale-105 active:scale-95 transition-transform shadow-sm"
+                          onClick={() => removeItem(item.id)}
+                          aria-label="Azalt"
+                          className="w-full h-[24px] flex items-center justify-center font-bold text-sm leading-none hover:opacity-75"
+                        >
+                          –
+                        </button>
+                        <span className="font-fs-sans font-bold text-[12px] leading-none py-1 tabular-nums">
+                          {cart[item.id]}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => addItem(item.id)}
+                          aria-label="Artır"
+                          className="w-full h-[24px] flex items-center justify-center font-bold text-sm leading-none hover:opacity-75"
                         >
                           +
                         </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ===================== 3. FLOATING CART BAR (1:1 with Screenshot 1) ===================== */}
-        <AnimatePresence>
-          {totalCount > 0 && (
-            <motion.div
-              initial={{ y: 80, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 80, opacity: 0 }}
-              className="fixed bottom-3 left-0 right-0 z-40 flex justify-center px-3.5 pointer-events-none"
-            >
-              <button
-                type="button"
-                onClick={() => navigate(slug ? `/hotel/${slug}/cart` : '/cart')}
-                className="pointer-events-auto w-full max-w-[512px] min-h-[58px] flex items-center justify-between gap-3 px-3 py-2 rounded-[20px] bg-gradient-to-r from-[#3e2c20] to-[#241a13] dark:from-[#261f33] dark:to-[#171322] border border-[#dfc08a]/30 dark:border-[#A78BFA]/30 shadow-[0_12px_32px_rgba(0,0,0,0.45)] text-white text-left active:scale-[0.985] transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  {/* Shopping Bag Icon with Badge on Top-Right */}
-                  <div className="relative w-[42px] h-[42px] flex-none rounded-[12px] bg-[#dfc08a]/15 text-[#dfc08a] dark:text-[#A78BFA] flex items-center justify-center">
-                    <svg
-                      width="22"
-                      height="22"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M16 10a4 4 0 0 1-8 0" />
-                      <path d="M3.103 6.034h17.794" />
-                      <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" />
-                    </svg>
-
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-[#dfc08a] dark:bg-[#A78BFA] text-[#241a13] font-black text-[11.5px] flex items-center justify-center tabular-nums shadow-sm">
-                      {totalCount}
-                    </span>
-                  </div>
-
-                  {/* Text: Səbətə bax / X məhsul */}
-                  <div>
-                    <h4 className="font-hotel-serif text-[18px] font-bold leading-tight tracking-wide text-white">
-                      Səbətə bax
-                    </h4>
-                    <span className="text-[12px] text-white/70 font-hotel-sans block mt-0.5">
-                      {totalCount} məhsul
-                    </span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addItem(item.id);
+                        }}
+                        aria-label="Səbətə əlavə et"
+                        className="w-9 h-9 border border-[var(--fs-border-strong)] text-[var(--fs-text)] hover:bg-[var(--fs-inv-bg)] hover:text-[var(--fs-inv-text)] flex items-center justify-center text-lg font-light transition-colors"
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
 
-                {/* Right Chevron > */}
-                <span className="text-white/80 group-hover:text-white group-hover:translate-x-0.5 transition-all pr-2">
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m9 18 6-6-6-6" />
+      {/* ===================== 3. ARCHITECTURAL FLOATING CART BAR ===================== */}
+      <AnimatePresence>
+        {totalCount > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-4 inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
+          >
+            <button
+              type="button"
+              onClick={() => navigate(slug ? `/hotel/${slug}/cart` : '/cart')}
+              className="pointer-events-auto w-full max-w-[560px] min-h-[60px] flex items-center justify-between gap-4 px-5 py-3 rounded-none bg-[#000000] border border-white/25 shadow-[0_12px_32px_rgba(0,0,0,0.35)] text-white text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative w-10 h-10 border border-white/30 flex items-center justify-center text-white shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                    <path d="M3.103 6.034h17.794" />
+                    <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" />
                   </svg>
-                </span>
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <span className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 bg-white text-black font-fs-sans font-bold text-[11px] flex items-center justify-center tabular-nums">
+                    {totalCount}
+                  </span>
+                </div>
 
-        {/* ===================== 4. ITEM DETAIL MODAL ===================== */}
-        <AnimatePresence>
-          {activeItem && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/75 backdrop-blur-sm"
-                onClick={() => setActiveItem(null)}
-              />
+                <div>
+                  <span className="font-fs-sans text-[11px] font-bold tracking-[0.22em] uppercase text-white block">
+                    {selectedLang === 'ru' ? 'Корзина' : selectedLang === 'en' ? 'View Cart' : 'Səbətə bax'}
+                  </span>
+                  <span className="font-fs-serif text-[14px] text-white/75 block mt-0.5 tabular-nums">
+                    {totalCount} {selectedLang === 'ru' ? 'шт.' : selectedLang === 'en' ? 'items' : 'məhsul'} · {totalPrice.toFixed(2)} ₼
+                  </span>
+                </div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 60 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 60 }}
-                transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-                className="relative z-10 w-full max-w-[480px] max-h-[85vh] overflow-y-auto rounded-t-[26px] sm:rounded-[26px] bg-[var(--bg-card)] border border-[var(--border-color)] p-5 text-[var(--text-main)] shadow-2xl space-y-4"
-              >
-                <div className="w-12 h-1.5 rounded-full bg-white/20 mx-auto mb-1" />
+              <span className="text-white/80 group-hover:translate-x-1 transition-transform">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                {/* Big image if present */}
-                {activeItem.image && (
-                  <div className="w-full h-[180px] rounded-2xl overflow-hidden bg-black/30">
-                    <img
-                      src={resolveMediaUrl(activeItem.image, '/media/guest/plate.webp')}
-                      alt={activeItem.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+      {/* ===================== 4. ITEM DETAIL MODAL ===================== */}
+      <AnimatePresence>
+        {activeItem && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[var(--fs-backdrop)] backdrop-blur-[2px]"
+              onClick={() => setActiveItem(null)}
+            />
 
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-hotel-serif text-xl font-bold uppercase tracking-wide text-[var(--text-main)]">
-                      {activeItem.name}
-                    </h3>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative z-10 w-full max-w-[500px] max-h-[88vh] overflow-y-auto rounded-none bg-[var(--fs-card)] border-t sm:border border-[var(--fs-border)] text-[var(--fs-text)] shadow-2xl"
+            >
+              {activeItem.image && (
+                <div className="w-full h-[220px] overflow-hidden bg-[var(--fs-surface-subtle)]">
+                  <img
+                    src={resolveMediaUrl(activeItem.image, '/media/guest/plate.webp')}
+                    alt={activeItem.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="p-6 sm:p-8 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1.5">
                     {activeItem.badge && (
-                      <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#A78BFA]/20 text-[#A78BFA] border border-[#A78BFA]/30">
+                      <span className="inline-block text-[9.5px] font-bold uppercase tracking-[0.18em] px-2.5 py-0.5 border border-[var(--fs-border-strong)] text-[var(--fs-text)]">
                         {activeItem.badge}
                       </span>
                     )}
+                    <h3 className="font-fs-sans font-extralight text-[21px] uppercase tracking-[0.15em] text-[var(--fs-text)]">
+                      {activeItem.name}
+                    </h3>
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => setActiveItem(null)}
-                    className="w-8 h-8 rounded-full bg-[var(--bg-subcard)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                    className="w-8 h-8 border border-[var(--fs-border)] hover:border-[var(--fs-border-strong)] flex items-center justify-center text-[var(--fs-text-muted)] hover:text-[var(--fs-text)] shrink-0"
                   >
                     ✕
                   </button>
                 </div>
 
                 {activeItem.desc && (
-                  <p className="text-xs sm:text-[13px] text-[var(--text-main)]/85 leading-relaxed font-hotel-sans">
+                  <p className="font-fs-serif text-[16px] text-[var(--fs-text-muted)] leading-relaxed">
                     {activeItem.desc}
                   </p>
                 )}
 
                 {activeItem.price && (
-                  <div className="text-lg font-bold text-[#A78BFA]">
+                  <div className="font-fs-sans text-[18px] font-bold tracking-[0.06em] text-[var(--fs-text)] pt-1">
                     {activeItem.price}
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--border-color)]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-[var(--fs-border)]">
                   <button
                     type="button"
                     onClick={() => {
                       addItem(activeItem.id);
                       setActiveItem(null);
                     }}
-                    className="py-3 rounded-2xl bg-[#a87b51] dark:bg-[#A78BFA] text-white dark:text-black text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                    className="fs-btn-primary w-full"
                   >
-                    ➕ Səbətə Əlavə Et
+                    {selectedLang === 'ru'
+                      ? 'В корзину'
+                      : selectedLang === 'en'
+                      ? 'Add to Cart'
+                      : 'Səbətə Əlavə Et'}
                   </button>
                   <button
                     type="button"
@@ -615,24 +610,28 @@ export const FoodBeveragePage: React.FC = () => {
                       setIsInquiryOpen(true);
                       setActiveItem(null);
                     }}
-                    className="py-3 rounded-2xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                    className="fs-btn-outline w-full"
                   >
-                    🛎️ Birbaşa Sifariş
+                    {selectedLang === 'ru'
+                      ? 'Прямой заказ'
+                      : selectedLang === 'en'
+                      ? 'Direct Order'
+                      : 'Birbaşa Sifariş'}
                   </button>
                 </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-        {/* ===================== 5. INQUIRY / ORDER MODAL ===================== */}
-        <InquirySheet
-          isOpen={isInquiryOpen}
-          onClose={() => setIsInquiryOpen(false)}
-          t={t.inquiry}
-          slug={hotelSlug}
-        />
-      </div>
+      {/* ===================== 5. INQUIRY MODAL ===================== */}
+      <InquirySheet
+        isOpen={isInquiryOpen}
+        onClose={() => setIsInquiryOpen(false)}
+        t={t.inquiry}
+        slug={hotelSlug}
+      />
     </div>
   );
 };

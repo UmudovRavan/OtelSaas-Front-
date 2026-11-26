@@ -23,101 +23,87 @@ export const WifiModal: React.FC<WifiModalProps> = ({ isOpen, onClose, ssid, pas
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop with Blur Fade */}
+        <div className="fs-portal fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent">
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            className="absolute inset-0 bg-[var(--fs-backdrop)] backdrop-blur-[2px]"
             onClick={onClose}
           />
 
-          {/* Modal Content with iOS Spring Pop */}
+          {/* Modal Content */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 16 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className="relative w-full max-w-sm rounded-[32px] bg-[var(--bg-card)] border border-[var(--border-color)] p-6 shadow-2xl z-10 text-center text-[var(--text-main)] overflow-hidden"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.25 }}
+            className="relative w-full max-w-[420px] rounded-none bg-[var(--fs-card)] border border-[var(--fs-border)] p-7 sm:p-8 shadow-2xl z-10 text-center text-[var(--fs-text)]"
           >
             {/* Close Button */}
-            <motion.button
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.88 }}
+            <button
+              type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+              aria-label="Bağla"
+              className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center border border-[var(--fs-border)] text-[var(--fs-text-muted)] hover:border-[var(--fs-border-strong)] hover:text-[var(--fs-text)] transition-colors"
             >
-              <IOSIcon name="Close" size={16} />
-            </motion.button>
+              <IOSIcon name="Close" size={15} />
+            </button>
 
-            {/* Wifi Icon with Spring Bounce */}
-            <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', damping: 18, stiffness: 300, delay: 0.05 }}
-              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#A78BFA]/20 text-[#A78BFA] shadow-lg shadow-[#A78BFA]/10"
-            >
-              <IOSIcon name="Wifi" size={28} />
-            </motion.div>
+            {/* Monochrome Wi-Fi Emblem */}
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center border border-[var(--fs-border-strong)] text-[var(--fs-text)]">
+              <IOSIcon name="Wifi" size={22} />
+            </div>
 
-            <h3 className="text-xl font-bold tracking-tight text-[var(--text-main)]">{t.title}</h3>
-            <p className="mt-1 text-xs text-[var(--text-muted)] leading-relaxed">
+            <h3 className="font-fs-sans font-extralight text-[22px] tracking-[0.18em] uppercase text-[var(--fs-text)]">
+              {t.title}
+            </h3>
+            <p className="mt-2 font-fs-serif text-[15px] text-[var(--fs-text-muted)] leading-relaxed">
               {t.desc}
             </p>
 
-            <div className="mt-5 space-y-2.5 text-left">
-              <motion.div
-                whileHover={{ scale: 1.01 }}
-                className="rounded-2xl bg-[var(--bg-subcard)] p-3.5 border border-[var(--border-color)] transition-colors"
-              >
-                <span className="block text-[11px] font-medium text-[var(--text-muted)]">{t.ssidLabel}</span>
-                <span className="text-sm font-semibold text-[var(--text-main)] tracking-wide">{ssid}</span>
-              </motion.div>
+            <div className="mt-6 space-y-3 text-left">
+              <div className="bg-[var(--fs-surface-subtle)] p-4 border border-[var(--fs-border)]">
+                <span className="block fs-kicker text-[var(--fs-text-muted)] mb-1">{t.ssidLabel}</span>
+                <span className="text-sm font-medium text-[var(--fs-text)] tracking-wide">{ssid}</span>
+              </div>
 
-              <motion.div
-                whileHover={{ scale: 1.01 }}
-                className="rounded-2xl bg-[var(--bg-subcard)] p-3.5 border border-[var(--border-color)] flex items-center justify-between transition-colors"
-              >
-                <div>
-                  <span className="block text-[11px] font-medium text-[var(--text-muted)]">{t.passLabel}</span>
-                  <span className="text-sm font-mono font-bold text-[var(--text-main)] tracking-wider">{pass}</span>
+              <div className="bg-[var(--fs-surface-subtle)] p-4 border border-[var(--fs-border)] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="block fs-kicker text-[var(--fs-text-muted)] mb-1">{t.passLabel}</span>
+                  <span className="text-sm font-mono font-semibold text-[var(--fs-text)] tracking-wider break-all">
+                    {pass}
+                  </span>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                <button
+                  type="button"
                   onClick={handleCopy}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                    copied
-                      ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
-                      : 'bg-[#A78BFA] text-black shadow-[#A78BFA]/25'
-                  }`}
+                  className="fs-btn-primary shrink-0 !min-h-[36px] !px-4 !py-2"
                 >
                   {copied ? (
                     <>
-                      <IOSIcon name="Check" size={14} />
+                      <IOSIcon name="Check" size={13} />
                       <span>{t.copied}</span>
                     </>
                   ) : (
                     <>
-                      <IOSIcon name="Copy" size={14} />
+                      <IOSIcon name="Copy" size={13} />
                       <span>{t.copy}</span>
                     </>
                   )}
-                </motion.button>
-              </motion.div>
+                </button>
+              </div>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
+            <button
+              type="button"
               onClick={onClose}
-              className="mt-5 w-full rounded-2xl bg-[var(--bg-subcard)] py-3 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-color)]"
+              className="fs-btn-outline mt-5 w-full"
             >
               {t.close}
-            </motion.button>
+            </button>
           </motion.div>
         </div>
       )}
